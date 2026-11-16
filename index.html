@@ -1,0 +1,1461 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gartenbewässerung – Bewässerungsassistent (Prototyp)</title>
+<style>
+:root{--g1:#1f5a3a;--g2:#2d7a4f;--g3:#e8f3ea;--ink:#1d2a22;--mut:#5c6b62;--line:#d5e0d8;--bg:#f6f8f4;--warn:#b4531a;--bad:#b3261e;--ok:#1f7a45;--blue:#1d5fa8}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);line-height:1.45}
+header{background:var(--g1);color:#fff;padding:14px 18px}
+header h1{margin:0;font-size:20px}
+.htop{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.hbtns{display:flex;gap:8px}
+.hbtns button{background:#fff;color:var(--g1);border:0;border-radius:9px;padding:8px 14px;font-size:14px;font-weight:700;cursor:pointer}
+.hbtns button.on{background:#ffe08a}
+#demoBar{display:none;background:#fff4c2;border-bottom:2px solid #e0b400;padding:9px 14px;font-size:14px}
+#demoBar .in{max-width:900px;margin:0 auto;display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap}
+.guidetxt h3{color:var(--g1);margin:16px 0 4px;font-size:16px}
+.guidetxt p{margin:0 0 8px;font-size:15px;line-height:1.55}
+header p{margin:2px 0 0;font-size:13px;opacity:.85}
+nav{display:flex;gap:6px;padding:10px 12px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5;overflow-x:auto}
+nav button{flex:1;min-width:110px;border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 6px;font-size:13px;cursor:pointer;color:var(--ink)}
+nav button.on{background:var(--g2);color:#fff;border-color:var(--g2)}
+nav button.done:not(.on){background:var(--g3)}
+main{max-width:900px;margin:0 auto;padding:14px}
+section{display:none}section.on{display:block}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+.card h2{margin:0 0 4px;font-size:18px;color:var(--g1)}
+.card h3{margin:14px 0 6px;font-size:15px}
+.hint{color:#4a5850;font-size:14.5px;margin:2px 0 10px}
+label{display:block;font-size:14px;font-weight:600;margin:10px 0 4px}
+input[type=number],input[type=text],input[type=date],select{width:100%;padding:9px 10px;border:1px solid #b9c7bd;border-radius:8px;font-size:15px;background:#fff}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.btn{background:var(--g2);color:#fff;border:0;border-radius:10px;padding:11px 18px;font-size:15px;cursor:pointer;font-weight:600}
+.btn.sec{background:#fff;color:var(--g1);border:1px solid var(--g2)}
+.btn.sm{padding:6px 10px;font-size:13px}
+.actions{display:flex;gap:10px;justify-content:space-between;margin-top:14px;flex-wrap:wrap}
+.radio{display:flex;flex-direction:column;gap:6px}
+.radio label{font-weight:500;border:1px solid var(--line);border-radius:10px;padding:9px 11px;margin:0;display:flex;gap:9px;align-items:flex-start;cursor:pointer}
+.radio label:has(input:checked){border-color:var(--g2);background:var(--g3)}
+.radio small{display:block;color:var(--mut);font-weight:400}
+.tools{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.tool{border:2px solid transparent;border-radius:9px;padding:6px 9px;font-size:13px;cursor:pointer;background:#fff;border-color:var(--line);display:flex;align-items:center;gap:6px}
+.tool.on{border-color:var(--g1);box-shadow:0 0 0 2px var(--g3)}
+.sw{width:14px;height:14px;border-radius:4px;border:1px solid rgba(0,0,0,.25);display:inline-block}
+.gridwrap{overflow:auto;border:1px solid var(--line);border-radius:10px;padding:6px;background:#fafafa}
+.pgrid{display:grid;grid-template-columns:repeat(28,var(--cs,12px));gap:1px;touch-action:none;user-select:none;margin:0 auto;background:#cdd6cf;width:max-content}
+.cell.out{background:repeating-linear-gradient(45deg,#e4e4e4,#e4e4e4 3px,#f4f4f4 3px,#f4f4f4 6px)!important}
+.dot{width:74%;height:74%;border-radius:50%;color:#fff;font-size:calc(var(--cs,12px)*.55);font-weight:700;display:flex;align-items:center;justify-content:center}
+.zchk{display:flex;flex-wrap:wrap;gap:6px 14px;margin:4px 0 8px}
+.chk{display:flex;gap:6px;align-items:center;font-weight:500;margin:0;font-size:14px}
+.syscard{margin-top:10px}
+.cell{width:var(--cs);height:var(--cs);background:#fff;font-size:calc(var(--cs) * .62);display:flex;align-items:center;justify-content:center;line-height:1}
+.legend{font-size:13.5px;color:#4a5850}
+.plist{display:flex;flex-direction:column;gap:5px;margin-top:8px}
+.plist div{display:flex;justify-content:space-between;align-items:center;font-size:14px;background:#f2f6f2;border-radius:8px;padding:5px 9px}
+.big{border-radius:14px;padding:16px;margin-bottom:12px;color:#fff}
+.big h2{margin:0;font-size:22px}
+.big p{margin:4px 0 0;font-size:14px;opacity:.95}
+.b-go{background:var(--blue)}.b-no{background:var(--ok)}.b-wait{background:#6b7c70}.b-stop{background:var(--bad)}
+.zone{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;background:#fff;border-left-width:6px}
+.zone h4{margin:0 0 4px;font-size:15px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.tag{font-size:12px;border-radius:999px;padding:2px 9px;color:#fff;font-weight:600}
+.t-go{background:var(--blue)}.t-no{background:var(--ok)}.t-wait{background:#6b7c70}.t-stop{background:var(--bad)}
+.zone .nums{display:flex;gap:14px;flex-wrap:wrap;margin:6px 0;font-size:14px}
+.zone .nums b{font-size:17px}
+.alert{border-radius:10px;padding:10px 12px;margin:8px 0;font-size:14px}
+.alert.w{background:#fff4e5;border:1px solid #f0c48a}
+.alert.r{background:#fdecea;border:1px solid #f0a9a3}
+.alert.i{background:#eaf2fb;border:1px solid #b7d1ee}
+.alert.w::before{content:'⚠️ '}.alert.r::before{content:'⛔ '}.alert.i::before{content:'ℹ️ '}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:600px){.two{grid-template-columns:1fr}}
+ul.tips{margin:4px 0 0;padding-left:18px;font-size:14px}
+.err{color:var(--bad);font-size:13px;margin-top:6px}
+.small{font-size:13.5px;color:#4a5850}
+.q{display:inline-flex;width:20px;height:20px;border-radius:50%;background:var(--g2);color:#fff;font-size:13px;font-weight:700;align-items:center;justify-content:center;cursor:pointer;margin-left:5px;vertical-align:middle;flex:none}
+.q::before{content:'?'}
+.qbox{background:#eef6f0;border:1px solid #b9d3c1;border-radius:8px;padding:8px 10px;font-size:14px;font-weight:400;color:var(--ink);margin:4px 0 6px;line-height:1.4}
+details.det,details.guide{font-size:14px;color:var(--mut);margin-top:8px}
+details.guide{background:#f4f8f4;border:1px solid var(--line);border-radius:8px;padding:8px 10px;color:var(--ink)}
+details summary{cursor:pointer;color:var(--g1);font-weight:600}
+details.guide ol{margin:6px 0;padding-left:20px}
+.todo{font-size:17px;font-weight:700;margin:4px 0}
+.pre{background:#eaf1ff!important;border-color:#4a7fe0!important}
+.prog{font-size:13px;color:var(--g2);font-weight:600;margin:0 0 8px}
+ol.steps{margin:4px 0 8px;padding-left:22px;font-size:14px}
+ol.steps li{margin:3px 0}
+.gal{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:8px;margin-top:8px}
+.gal figure{margin:0;background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px;text-align:center}
+.gal svg{width:100%;height:auto;display:block}
+.gal figcaption{font-size:12px;line-height:1.3}
+.gal b{display:block;font-size:13px}
+#toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#1d2a22;color:#fff;padding:10px 16px;border-radius:10px;font-size:14px;display:none;z-index:20;max-width:90%}
+button:disabled{opacity:.45;cursor:default}
+.ver{text-align:center;font-size:11px;color:#9aa69f;margin:18px 0}
+.imp{background:#fff9d6!important;border-color:#d9b800!important}
+.choice{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+.choice .card{margin-bottom:0}
+.choice h2{font-size:19px}
+.status{margin-top:10px;font-size:14px}
+.status.err2{color:var(--bad)}
+textarea{width:100%;min-height:90px;padding:9px 10px;border:1px solid #b9c7bd;border-radius:8px;font-size:14px;font-family:inherit}
+input[type=file]{width:100%;padding:8px;border:1px dashed #8aa896;border-radius:8px;background:#fafcf9;font-size:14px}
+.banner ul{margin:6px 0 0;padding-left:18px}
+</style>
+</head>
+<body>
+<header>
+  <div class="htop">
+    <div><h1>🌿 Gartenbewässerung</h1>
+    <p>Weder zu viel noch zu wenig – Bewässerungsempfehlung für deinen Garten</p></div>
+    <div class="hbtns"><button id="btnGuide" onclick="showGuide()">📖 Anleitung</button><button id="btnDemo" onclick="toggleDemo()">🧪 Demo</button><button id="btnVideo" onclick="showVideo()">🎬 Video</button></div>
+  </div>
+  <div id="fatal" class="alert r" style="display:none;margin:8px 0 0;color:#7a1b14"></div>
+</header>
+<div id="demoBar"><div class="in"><span>🧪 <b>Demo mit einem Beispielgarten.</b> Probiere alles aus – deine eigenen Angaben bleiben unverändert, und nichts wird gespeichert.</span><button class="btn sm" onclick="endDemo()">Demo beenden</button></div></div>
+<nav id="nav"></nav>
+<main>
+
+<!-- VIDEO -->
+<section id="sV">
+  <div class="card">
+    <h2>🎬 Erklärvideo</h2>
+    <p class="hint">Ein Rundgang von knapp vier Minuten: was die App kann und was nicht, die drei Schritte der Einrichtung und der tägliche Betrieb. Das Video ist vertont; die Erklärungen stehen zusätzlich als Text im Bild.</p>
+    <video id="vid" controls playsinline preload="metadata" src="erklaervideo.mp4" style="width:100%;border-radius:10px;background:#000;display:block"></video>
+    <p class="small" id="vidErr" style="display:none">Das Video kann hier nicht abgespielt werden. Die gleichen Inhalte findest du in der Anleitung und in der Demo.</p>
+    <div class="actions"><span><button class="btn sec" onclick="showGuide()">📖 Zur Anleitung</button> <button class="btn sec" onclick="closeGuide();toggleDemo()">🧪 Zur Demo</button></span><button class="btn" onclick="closeGuide()">Zurück zur App</button></div>
+  </div>
+</section>
+
+<!-- ANLEITUNG -->
+<section id="sA">
+  <div class="card guidetxt">
+    <h2>📖 Anleitung</h2>
+    <h3>Wozu die App da ist</h3>
+    <p>Die Gartenbewässerung sagt dir, ob dein Garten heute Wasser braucht und wie viel. Sie hilft dir, weder zu viel noch zu wenig zu giessen. Dafür muss sie deinen Garten einmal kennenlernen. Danach genügen bei jedem Öffnen ein paar Angaben zur heutigen Lage, und du erhältst eine Empfehlung für jeden Bereich deines Gartens.</p>
+    <h3>Der Anfang: zwei Wege</h3>
+    <p>Auf der Startseite wählst du, wie du beginnst. Entweder gibst du alles von Hand ein, oder du lädst einen Plan deines Gartens hoch beziehungsweise fotografierst ihn. Beim Hochladen füllt die App die Felder so weit wie möglich selbst aus und zeichnet deinen Garten vereinfacht nach. Was sie erkannt hat, ist gelb markiert. Du gehst danach die gleichen drei Schritte durch und korrigierst, was nicht stimmt.</p>
+    <h3>Schritt 1: Dein Garten</h3>
+    <p>Du trägst Breite und Länge deines Gartens ein. Bodenart und Sonneneinstrahlung sind auf übliche Werte voreingestellt; ändere sie nur, wenn du es besser weisst. Ausserdem gibst du deinen Ort an, damit die App den Wetterbericht für dich holen kann.</p>
+    <h3>Schritt 2: Plan und Pflanzen</h3>
+    <p>Hier malst du deinen Garten auf ein Raster. Du tippst zuerst an, was du einzeichnen willst, zum Beispiel «Rasen», und fährst dann mit dem Finger oder der Maus über die Felder, wo der Rasen liegt. So entstehen die Zonen deines Gartens: Rasen, Beete, Hecke, Bäume und Flächen wie Haus oder Terrasse, die kein Wasser brauchen. Stellen im Rasen, die schnell leiden, markierst du eigens als empfindliche Stelle. Einzelne Pflanzen kannst du zusätzlich mit Namen eintragen. Hast du dich vermalt, hilft der Knopf «Rückgängig». Der Plan hat normalerweise die Form eines hohen Blattes; ist dein Garten viel breiter als lang, stellst du über dem Plan auf «Rechteck passend zum Garten» um.</p>
+    <h3>Schritt 3: Deine Bewässerung</h3>
+    <p>Die App fragt, ob du schon eine Bewässerung hast. Wenn ja, legst du für jede Art ein eigenes System an, etwa die Versenkregner im Rasen und den Tropfschlauch an der Hecke. Bilder zeigen dir, wie die verschiedenen Regner aussehen. Damit die App die richtige Laufzeit ausrechnen kann, sollte sie wissen, wie viel Wasser aus deiner Anlage kommt. Das findest du mit dem Eimertest heraus, der in diesem Schritt erklärt ist. Ohne diese Messung rechnet die App mit einem Schätzwert. Seltener gebrauchte Angaben wie die Zahl der Ventile findest du unter «Weitere Angaben»; du kannst sie leer lassen. Zum Schluss gibst du an, welche Zonen jedes System bewässert, entweder durch Ankreuzen oder indem du es im Plan einzeichnest.</p>
+    <h3>Die heutige Lage</h3>
+    <p>Nach der Einrichtung, und später bei jedem Öffnen, zeigt die App die Seite «Heutige Lage». Dort trägst du ein, wie viel es in den letzten 24 Stunden und in den sechs Tagen davor geregnet hat (eine Schätzung genügt), wie feucht die Erde in jeder Zone ist und wann du zuletzt gegossen hast. Die Feuchtigkeit prüfst du am einfachsten mit dem Finger: etwa fünf Zentimeter tief in die Erde stecken und fühlen. Beim Wiederöffnen sind die Felder mit deinen letzten Werten vorbelegt und blau markiert. Du änderst, was nicht mehr stimmt, oder bestätigst die Werte mit dem Häkchen.</p>
+    <p>Danach tippst du auf «Wetter holen und Empfehlung berechnen». Die App holt den Wetterbericht für deinen Ort. Gelingt das nicht, trägst du Regen und Temperaturen aus deinem Wetterbericht selbst ein.</p>
+    <h3>Die Empfehlung lesen</h3>
+    <p>Ganz oben steht das Gesamturteil für heute. Gleich darunter fasst der Kasten «Das ist heute zu tun» zusammen, wie lange jede Anlage laufen soll und wo du von Hand giesst. Jede Anlage läuft nur einmal, auch wenn sie mehrere Zonen versorgt; ihre Laufzeit richtet sich nach der grössten dieser Zonen. Danach folgt für jede Zone ein eigener Kasten mit den Einzelheiten: der Wasserbedarf in Litern, der Tag, an dem du wieder nachschauen solltest, und ein Hinweis, falls eine Zone an einer gemeinsamen Anlage etwas mehr oder zu wenig bekommt. Tropfschläuche laufen deutlich länger als Regner, das ist normal. Warnungen erscheinen bei Frost, starkem Wind oder wenn deine Zeitschaltuhr trotz Regen laufen würde. Am Ende vergleicht die App deinen bisherigen Wochenplan mit dem tatsächlichen Bedarf und sagt dir in einem Wort, ob er passt, zu viel oder zu wenig Wasser gibt.</p>
+    <h3>Das grüne Fragezeichen</h3>
+    <p>Überall, wo ein grünes «?» steht, bekommst du mit einem Tipp darauf eine kurze Erklärung. Ein zweiter Tipp schliesst sie wieder.</p>
+    <h3>Deine Angaben sichern</h3>
+    <p>Die App speichert deine Angaben nur auf dem Gerät, auf dem du sie eingibst. Auf der Startseite kannst du sie mit «Meine Angaben sichern» zusätzlich aufbewahren und auf einem anderen Gerät unter «Plan hochladen» wieder einlesen.</p>
+    <h3>Die Demo</h3>
+    <p>Mit dem Knopf «Demo» oben rechts öffnest du einen fertig eingerichteten Beispielgarten. Die Demo zeigt dir den Alltag mit der App: Du wählst einen von vier Beispieltagen (trockener Sommertag, nach einem Gewitter, Hitzewelle, Herbst mit Nachtfrost) und siehst, was die App beim Öffnen anzeigt und welche Empfehlung sie gibt. Mit «Beispiel für mich ausfüllen und Empfehlung zeigen» läuft das von selbst ab; du kannst die Felder aber auch selbst ändern. Deine eigenen Angaben werden dabei nicht verändert. Mit «Demo beenden» kehrst du dorthin zurück, wo du vorher warst.</p>
+    <h3>Das Erklärvideo</h3>
+    <p>Der Knopf «Video» oben rechts zeigt einen Rundgang von knapp vier Minuten durch die Einrichtung und den Betrieb. Das Video ist vertont; die Erklärungen stehen zusätzlich als Text im Bild.</p>
+    <h3>Was die App nicht kann</h3>
+    <p>Die App gibt Empfehlungen, sie schaltet keine Anlage ein oder aus. Ihre Zahlen sind sorgfältig gerechnete Richtwerte, keine Messungen. Wenn die Empfehlung und dein Eindruck vom Garten nicht zusammenpassen, vertraue der Fingerprobe.</p>
+    <div class="actions"><span></span><button class="btn" onclick="closeGuide()">Zurück zur App</button></div>
+  </div>
+</section>
+
+<!-- START -->
+<section id="s0">
+  <div class="card">
+    <h2>Willkommen bei der Gartenbewässerung 🌿</h2>
+    <p class="hint">Du kannst auf zwei Arten vorgehen: entweder gibst du alle Angaben manuell ein oder du lädst einen Plan hoch und ergänzt die Angaben.</p>
+  </div>
+  <div class="choice">
+    <div class="card">
+      <h2>✍️ Angaben manuell eingeben</h2>
+      <p class="hint">Du gehst Schritt für Schritt durch: 1 Garten, 2 Plan &amp; Pflanzen, 3 Bewässerung. Dauert etwa 5 Minuten.</p>
+      <button class="btn" onclick="startManual()">Manuell einrichten →</button>
+    </div>
+    <div class="card">
+      <h2>📄 Plan hochladen</h2>
+      <p class="hint">Lade einen Plan oder eine Beschreibung deines Gartens hoch. Die Felder werden vorausgefüllt – danach kannst du alles prüfen und korrigieren.</p>
+      <label for="planFile">Datei wählen</label>
+      <input type="file" id="planFile" accept=".json,.pdf,.png,.jpg,.jpeg,.webp,.txt,image/*,application/pdf" onchange="fileChosen('planFile','planPhoto')">
+      <label for="planPhoto">…oder Plan fotografieren</label>
+      <input type="file" id="planPhoto" accept="image/*" capture="environment" onchange="fileChosen('planPhoto','planFile')">
+      <p class="small">Auf dem Handy öffnet sich die Kamera. Halte den Plan gerade und gut beleuchtet, damit Beschriftungen lesbar sind.</p>
+      <div id="photoPrev" style="display:none;margin-top:8px"><img id="photoImg" alt="Vorschau des Plans" style="max-width:100%;max-height:220px;border-radius:8px;border:1px solid var(--line)"></div>
+      <p class="small">Geeignet: Bild, Bildschirmfoto oder PDF eines Gartenplans (z. B. GARDENA myGarden) · Textdatei · zuvor gesicherte Angaben aus dieser App.</p>
+      <label for="planText">…oder Text einfügen (optional)</label>
+      <textarea id="planText" placeholder="z. B. Beschreibung des Gartens"></textarea>
+      <div class="actions"><span class="small">Bilder und PDFs werden zur automatischen Auswertung übermittelt (du wirst vorher um Zustimmung gebeten). Gesicherte Angaben werden nur auf diesem Gerät gelesen.</span><button class="btn" id="impBtn" onclick="doImport()">Plan einlesen</button></div>
+      <div class="status" id="impStatus"></div>
+    </div>
+  </div>
+  <div class="card" id="resume" style="display:none;margin-top:14px">
+    <h2>Gespeicherte Einrichtung</h2>
+    <p class="hint">Auf diesem Gerät ist bereits ein Garten eingerichtet. Deine Angaben sind nur auf diesem Gerät gespeichert: Wenn du die Browserdaten löschst oder ein anderes Gerät benutzt, sind sie nicht mehr da. Sichere sie deshalb mit «Meine Angaben sichern».</p>
+    <div class="actions" style="justify-content:flex-start">
+      <button class="btn" onclick="go(4)">Weiter zur heutigen Lage</button>
+      <button class="btn sec" onclick="exportProfile()">Meine Angaben sichern</button>
+      <button class="btn sec" id="resetBtn" onclick="resetAsk()">Neu beginnen</button>
+    </div>
+    <div id="resetBox" class="alert w" style="display:none">Wirklich alle gespeicherten Angaben löschen? <button class="btn sm" onclick="resetDo()">Ja, löschen</button> <button class="btn sec sm" onclick="$('resetBox').style.display='none'">Abbrechen</button></div>
+    <div id="exportBox" style="display:none">
+      <p class="hint" id="exportMsg"></p>
+      <textarea id="exportTxt" readonly></textarea>
+      <div class="actions" style="justify-content:flex-start"><button class="btn sec sm" onclick="copyExport()">Text kopieren</button></div>
+      <p class="small">Die gesicherten Angaben kannst du später oder auf einem anderen Gerät auf der Startseite unter «Plan hochladen» wieder einlesen (Datei wählen oder Text einfügen).</p>
+    </div>
+  </div>
+</section>
+
+<!-- SCHRITT 1 -->
+<section id="s1">
+  <div class="card">
+    <h2>1 · Dein Garten (einmalig)</h2>
+    <p class="prog">Schritt 1 von 3 · die Einrichtung dauert insgesamt etwa 5 bis 10 Minuten</p>
+    <div class="alert i banner" data-step="1" style="display:none"></div>
+    <p class="hint">Diese Angaben werden gespeichert und müssen nicht jedes Mal neu eingegeben werden.</p>
+    <div class="row">
+      <div><label for="gw">Breite (m)</label><input type="number" id="gw" min="2" max="100" step="0.5"></div>
+      <div><label for="gl">Länge (m)</label><input type="number" id="gl" min="2" max="100" step="0.5"></div>
+    </div>
+    <div class="row">
+      <div><label for="soil">Bodenart (vorherrschend)<span class="q" data-k="soil"></span></label>
+        <select id="soil">
+          <option value="sand">Sandig (Wasser versickert schnell)</option>
+          <option value="loam" selected>Lehmig / normaler Gartenboden</option>
+          <option value="clay">Tonig (schwer, hält Wasser lange)</option>
+        </select></div>
+      <div><label for="sun">Sonneneinstrahlung (gesamter Garten)</label>
+        <select id="sun">
+          <option value="1.15">Überwiegend sonnig</option>
+          <option value="1" selected>Gemischt</option>
+          <option value="0.8">Überwiegend schattig</option>
+        </select></div>
+    </div>
+    <p class="hint">Standardwerte sind «lehmig» und «gemischt». Ist der Boden im Garten unterschiedlich, wähle die vorherrschende Art.</p>
+    <h3>📍 Standort (für die automatische Wetterprognose)</h3>
+    <div class="row" style="align-items:end">
+      <div><label for="locq">Ort</label><input type="text" id="locq" placeholder="z. B. Vaduz, Zürich, Feldkirch"></div>
+      <div><button class="btn sec" type="button" onclick="searchLoc()">Ort suchen</button></div>
+    </div>
+    <select id="locres" style="display:none;margin-top:8px" onchange="pickLoc()"></select>
+    <div class="row">
+      <div><label for="lat">Breitengrad<span class="q" data-k="coord"></span></label><input type="number" id="lat" step="0.0001" min="-90" max="90" placeholder="z. B. 47.141"></div>
+      <div><label for="lon">Längengrad</label><input type="number" id="lon" step="0.0001" min="-180" max="180" placeholder="z. B. 9.521"></div>
+    </div>
+    <p class="hint" id="locMsg">Ohne Standort musst du die Prognose von Hand eintragen. Koordinaten findest du z. B. in Google Maps (Rechtsklick auf den Garten).</p>
+    <div class="actions"><span></span><button class="btn" onclick="saveStep1()">Weiter zum Gartenplan →</button></div>
+    <div class="err" id="e1"></div>
+  </div>
+</section>
+
+<!-- SCHRITT 2 -->
+<section id="s2">
+  <div class="card">
+    <h2>2 · Gartenplan: Zonen &amp; Pflanzen (einmalig)</h2>
+    <p class="prog">Schritt 2 von 3 · noch etwa 5 Minuten</p>
+    <div class="alert i banner" data-step="2" style="display:none"></div>
+    <ol class="steps">
+      <li>Tippe unten eine Zone<span class="q" data-k="zone"></span> an, zum Beispiel «Rasen».</li>
+      <li>Fahre mit dem Finger oder mit gedrückter Maustaste über die Felder, wo diese Zone liegt.</li>
+      <li>Vermalt? «Rückgängig» nimmt den letzten Strich zurück, «Radieren» löscht einzelne Felder.</li>
+      <li>Stellen im Rasen, die schnell leiden<span class="q" data-k="lawns"></span>, übermalst du mit «Rasen – empfindliche Stelle».</li>
+      <li>Mit «Pflanze setzen» und einem Tipp auf ein Feld trägst du einzelne Pflanzen ein (freiwillig).</li>
+    </ol>
+    <p class="hint"><span id="cellinfo"></span></p>
+    <div id="planRef" style="display:none;margin-bottom:10px"><h3 style="margin-top:0">Vorlage: dein hochgeladener Plan</h3><img id="planRefImg" alt="Hochgeladener Plan" style="max-width:100%;max-height:260px;border-radius:8px;border:1px solid var(--line)"><p class="small">Unten siehst du die daraus erstellte, vereinfachte Zeichnung. Vergleiche beide und korrigiere falsche Felder.</p></div>
+    <div class="row" style="align-items:end"><div><label for="fmt">Planformat</label>
+      <select id="fmt" onchange="changeFormat(this.value)"><option value="a4p">Standard</option><option value="rect">Rechteck passend zum Garten (Breite × Länge)</option></select></div></div>
+    <p class="hint">Meist passt «Standard» (ein hohes Blatt). Wähle «Rechteck passend zum Garten» nur, wenn dein Garten viel breiter als lang ist und im Plan zu klein wirkt. Die Wahl gilt auch für den Bewässerungsplan in Schritt 3.</p>
+    <div class="tools" id="tools"></div>
+    <div style="margin-bottom:8px"><button class="btn sec sm undoBtn" onclick="undo()" disabled>↶ Rückgängig</button></div>
+    <div class="gridwrap"><div id="grid" class="pgrid"></div></div>
+    <p class="legend" id="areas"></p>
+    <div id="plantForm" style="display:none" class="card" >
+      <h3 style="margin-top:0">Pflanze auf Feld (<span id="pfPos"></span>) setzen</h3>
+      <div class="row">
+        <div><label for="pfName">Name (z. B. Rose, Lavendel, Tomate)</label><input type="text" id="pfName"></div>
+        <div><label for="pfKind">Art</label>
+          <select id="pfKind"><option value="🌳">Baum</option><option value="🌿" selected>Strauch / Hecke</option><option value="🌸">Staude / Blume</option><option value="🥕">Gemüse</option><option value="🌱">Kräuter</option><option value="🪴">Kübelpflanze</option></select></div>
+      </div>
+      <label style="display:flex;gap:8px;align-items:center;font-weight:500"><input type="checkbox" id="pfNew"> Neu gepflanzt (jünger als 1 Jahr)</label>
+      <div class="actions"><button class="btn sec sm" onclick="closePF()">Abbrechen</button><button class="btn sm" onclick="addPlant()">Pflanze setzen</button></div>
+    </div>
+    <h3>Eingetragene Pflanzen</h3>
+    <div class="plist" id="plist"></div>
+    <div class="actions"><button class="btn sec" onclick="go(1)">← Zurück</button><button class="btn" onclick="saveStep2()">Weiter zur Bewässerung →</button></div>
+    <div class="err" id="e2"></div>
+  </div>
+</section>
+
+<!-- SCHRITT 3 -->
+<section id="s3">
+  <div class="card">
+    <h2>3 · Aktuelle Bewässerung (einmalig)</h2>
+    <p class="prog">Schritt 3 von 3 · noch etwa 2 Minuten</p>
+    <div class="alert i banner" data-step="3" style="display:none"></div>
+    <p class="hint">Gibt es schon eine Bewässerung? Es können mehrere Systeme nebeneinander bestehen – z. B. Versenkregner für Rasen und Bäume, Tropfbewässerung für eine Hecke.</p>
+    <div class="radio" id="hasIrr">
+      <label><input type="radio" name="hi" value="no"><span>Nein, ich bewässere nicht (oder nur gelegentlich von Hand ohne feste Anlage)</span></label>
+      <label><input type="radio" name="hi" value="yes"><span>Ja, es gibt eine oder mehrere Bewässerungen</span></label>
+    </div>
+    <div class="actions" style="justify-content:flex-start;margin-top:12px"><button class="btn sec" onclick="planUebernehmen()">📄 Bewässerungs-Plan übernehmen</button></div>
+    <p class="small">Bewässerungs-Plan übernehmen fügt ein bestehendes System mit Versenkregnern, Viereckregnern, Impuls-, Kreis- und Sektorenregnern hinzu.</p>
+    <div id="irrWrap" style="display:none">
+      <h3>Bewässerungssysteme<span class="q" data-k="system"></span></h3>
+      <details class="guide" style="margin-bottom:8px"><summary>Welche Regnerart habe ich? (Bilder ansehen)</summary><div id="galHost"></div></details>
+      <div id="sysList"></div>
+      <div class="actions" style="justify-content:flex-start"><button class="btn sec sm" onclick="addSystem()">+ System hinzufügen</button></div>
+      <h3>Bewässerung im Plan einzeichnen (optional)</h3>
+      <p class="small" id="fmtNote"></p>
+      <p class="hint">Wähle ein System und male die Flächen, die es bewässert. Die Zonen aus Schritt 2 sind blass sichtbar.</p>
+      <div class="tools" id="itools"></div>
+      <div style="margin-bottom:8px"><button class="btn sec sm undoBtn" onclick="undo()" disabled>↶ Rückgängig</button></div>
+      <div class="gridwrap"><div id="grid3" class="pgrid"></div></div>
+      <p class="legend" id="irrAreas"></p>
+      <h3 id="irrUpload">Plan oder Foto der Bewässerung hochladen</h3>
+      <p class="hint">Die App liest daraus die Systeme und zeichnet sie im Plan ein. Sie werden zu den bestehenden Systemen hinzugefügt. Sobald du eine Datei gewählt oder ein Foto gemacht hast, beginnt das Einlesen von selbst.</p>
+      <div class="row">
+        <div><label for="irrFile">Datei (Bild, PDF)</label><input type="file" id="irrFile" accept=".pdf,.png,.jpg,.jpeg,.webp,.txt,image/*,application/pdf" onchange="irrChosen('irrFile','irrPhoto')"></div>
+        <div><label for="irrPhoto">…oder fotografieren</label><input type="file" id="irrPhoto" accept="image/*" capture="environment" onchange="irrChosen('irrPhoto','irrFile')"></div>
+      </div>
+      <div class="status" id="irrStatus"></div>
+    </div>
+    <p class="small">Deine Angaben werden nur auf diesem Gerät gespeichert. Auf der Startseite kannst du sie mit «Meine Angaben sichern» zusätzlich aufbewahren.</p>
+    <div class="err" id="e3"></div>
+    <div class="actions"><button class="btn sec" onclick="go(2)">← Zurück</button><button class="btn" onclick="saveStep3()">Einrichtung abschliessen →</button></div>
+  </div>
+</section>
+
+<!-- SCHRITT 4 -->
+<section id="s4">
+  <div id="demoGuide" class="card" style="display:none;border:2px solid #e0b400;background:#fffbe6"></div>
+  <div class="card">
+    <h2>4 · Heutige Lage: Wie sieht es im Garten aus?</h2>
+    <div id="lastNote"></div>
+    <p id="cdateTxt" style="font-weight:600;margin:8px 0 0"></p><input type="hidden" id="cdate">
+    <h3>🌧️ Niederschlag der letzten Tage</h3>
+    <p class="hint">Wie viel hat es geregnet? 1 mm Regen = 1 Liter Wasser pro Quadratmeter. Hat es nicht geregnet, lass die Felder leer.</p>
+    <div class="row">
+      <div><label for="r24">In den letzten 24 Stunden (mm)<span class="q" data-k="mm"></span></label><input type="number" id="r24" min="0" step="0.5" placeholder="leer = kein Regen"></div>
+      <div><label for="r27">In den 6 Tagen davor, alles zusammen (mm)<span class="q" data-k="mm7"></span></label><input type="number" id="r27" min="0" step="0.5" placeholder="leer = kein Regen"></div>
+    </div>
+    <p class="small" id="pastHint"></p>
+    <h3>🌱 Bodenfeuchtigkeit</h3>
+    <p class="hint">Wähle für jede Zone, wie sich die Erde anfühlt (Fingerprobe<span class="q" data-k="finger"></span>). Hast du ein Messgerät für Bodenfeuchte<span class="q" data-k="sensor"></span>, kannst du stattdessen dessen Wert eintragen.</p>
+    <div id="moist"></div>
+    <label for="lastirr">Letzte Bewässerung</label>
+    <select id="lastirr"><option value="">– bitte wählen –</option><option value="0">Heute</option><option value="1">Gestern</option><option value="2">Vor 2–3 Tagen</option><option value="5">Vor mehr als 3 Tagen</option><option value="9">Nie / schon lange nicht</option></select>
+    <label class="chk" id="preBox" style="display:none;margin-top:12px;font-weight:600"><input type="checkbox" id="preOk"> Ich habe die blau markierten Werte geprüft – sie stimmen für heute.</label>
+    <div class="actions"><span><button class="btn sec" onclick="go(1)">Einrichtung ändern</button> <button class="btn sec" onclick="go(0)">Start / Angaben sichern</button></span><button class="btn" id="fcBtn" onclick="stepWeather()">Wetter holen und Empfehlung berechnen →</button></div>
+    <div class="err" id="e4"></div>
+  </div>
+  <div class="card" id="fcCard" style="display:none">
+    <h2>🌤️ Wetterprognose <span id="locName"></span></h2>
+    <div class="status" id="fcStatus"></div>
+    <div class="row">
+      <div><label for="f24">Regen nächste 24 Std. (mm)</label><input type="number" id="f24" min="0" step="0.5" placeholder="0"></div>
+      <div><label for="f23">Regen in Tagen 2–3 (mm)</label><input type="number" id="f23" min="0" step="0.5" placeholder="0"></div>
+      <div><label for="f47">Mittelfrist: Regen Tage 4–7 (mm)<span class="q" data-k="mittel"></span></label><input type="number" id="f47" min="0" step="0.5" placeholder="0"></div>
+    </div>
+    <div class="row">
+      <div><label for="tmax">Ø Höchsttemperatur nächste 3 Tage (°C)<span class="q" data-k="tmax"></span></label><input type="number" id="tmax" step="0.5"></div>
+      <div><label for="tmin">Tiefste Nachttemperatur nächste 3 Tage (°C)<span class="q" data-k="tmin"></span></label><input type="number" id="tmin" step="0.5"></div>
+      <div><label for="wind">Max. Wind (km/h)</label><input type="number" id="wind" min="0" placeholder="0"></div>
+    </div>
+    <p class="hint">Die Werte lassen sich übersteuern, z. B. mit der Prognose von <a href="https://www.meteoschweiz.admin.ch" target="_blank" rel="noopener">MeteoSchweiz</a>.</p>
+    <p class="small">Wetterdaten: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a> (Lizenz CC BY 4.0)</p>
+    <div class="actions"><span></span><button class="btn" onclick="calc()">Empfehlung berechnen</button></div>
+    <div class="err" id="e5"></div>
+  </div>
+  <div id="result"></div>
+</section>
+
+<div id="toast"></div>
+<p class="ver">Version 17</p>
+</main>
+
+<script>
+const ZONES={
+  lawn:{n:'Rasen',c:'#9bd37a',kc:.8,root:15,trig:.55,watered:true},
+  lawnS:{n:'Rasen – empfindliche Stelle',c:'#f4a261',kc:.9,root:10,trig:.35,watered:true},
+  bed:{n:'Beet / Stauden',c:'#f2a7c3',kc:.8,root:16,max:10,trig:.55,watered:true},
+  veg:{n:'Gemüse / Kräuter',c:'#ef8354',kc:1.0,root:16,max:10,trig:.4,watered:true},
+  shrub:{n:'Sträucher / Hecke',c:'#4f9d69',kc:.6,root:24,max:12,trig:.7,watered:true},
+  tree:{n:'Bäume / Obstbäume',c:'#2d6a4f',kc:.5,root:30,max:15,trig:.8,watered:true},
+  dry:{n:'Trockenheitsliebend (Lavendel …)',c:'#b8a1e3',kc:.4,root:20,max:8,trig:.85,watered:true},
+  none:{n:'Nicht bewässern (Haus, Weg, Terrasse)',c:'#c9c9c0',watered:false}
+};
+const SOIL={sand:{fc:18,wp:6,n:'sandig'},loam:{fc:32,wp:14,n:'lehmig'},clay:{fc:40,wp:22,n:'tonig'}};
+const ET_M=[.4,.8,1.5,2.5,3.5,4.5,5,4.3,2.8,1.5,.7,.4];
+const TMAX_M=[3,5,10,14,19,22,25,24,20,14,8,4];
+const FINGER={1:{t:'Sehr trocken (staubig, Risse, hell)',f:1.2},2:{t:'Trocken (in 5 cm Tiefe krümelig)',f:.8},3:{t:'Leicht feucht (frisch, nicht formbar)',f:.4},4:{t:'Gut feucht (formbar, kein Wasser)',f:.1},5:{t:'Nass (matschig, Wasser tritt aus)',f:0}};
+const TIPS={
+ lawn:{do:['Selten, aber durchdringend giessen (Wurzeln erreichen so tiefere Schichten).'],dont:['Nicht täglich kurz sprengen – fördert flache Wurzeln und Moos.','Nicht bei Frost oder in der prallen Mittagssonne.']},
+ lawnS:{do:['Kürzere Läufe, dafür bei Bedarf früher nachgiessen.','Stelle prüfen (Fingerprobe) statt nach Kalender zu giessen.'],dont:['Nicht überwässern: Staunässe fördert Pilzkrankheiten.','Neu angesäte Stellen nicht austrocknen lassen.']},
+ bed:{do:['Direkt am Boden giessen, nicht über die Blätter.','Mulchen reduziert Verdunstung.'],dont:['Blüten und Laub nicht abends nass lassen (Pilze).']},
+ veg:{do:['Gleichmässig feucht halten, besonders bei Fruchtansatz.'],dont:['Nicht stark schwanken zwischen trocken und nass (Platzen, Blütenendfäule).']},
+ shrub:{do:['Seltener, aber tief wässern – Wurzeln reichen tief.','Immergrüne auch in milden Wintertagen bei Trockenheit prüfen.'],dont:['Nicht bei gefrorenem Boden giessen.']},
+ tree:{do:['Junge Bäume wöchentlich durchdringend wässern (Giessrand).'],dont:['Keine Kurzbewässerung – Wasser kommt nicht in die Tiefe.']},
+ dry:{do:['Sehr sparsam; Boden zwischen den Gaben austrocknen lassen.'],dont:['Nicht regelmässig mitbewässern – Staunässe lässt mediterrane Pflanzen eingehen.']}
+};
+const DEF_RATE={mobile:10,pop:15,square:12,impulse:10,circle:10,sector:10,drip:6,manual:12,none:12};
+const IRR_NAMES={none:'Keine Bewässerung',manual:'Von Hand',mobile:'Mobiler Regner',pop:'Versenkregner',square:'Viereckregner',impulse:'Impulsregner',circle:'Kreisregner',sector:'Sektorenregner',drip:'Tropfbewässerung'};
+const SYS_TYPES=['pop','square','impulse','circle','sector','mobile','drip','manual'];
+
+let S=load()||{garden:{w:10,l:12,soil:'loam',sun:'1'},cells:[],icells:[],plants:[],systems:[],hasIrr:null,done:false};
+let tool='lawn',step=1,pending=null,DEMO=false,guideBack=0,demoBack=0;
+
+function load(){try{return JSON.parse(localStorage.getItem('gartenwasser')||'null')}catch(e){return null}}
+function save(){if(DEMO)return;try{localStorage.setItem('gartenwasser',JSON.stringify(S))}catch(e){}}
+const $=id=>document.getElementById(id);
+const num=id=>{const v=$(id).value;return v===''?null:parseFloat(v)};
+
+/* Navigation */
+function renderNav(){
+  const names=['Start','1 Garten','2 Plan &amp; Pflanzen','3 Bewässerung','4 Heutige Lage'];
+  $('nav').innerHTML=names.map((n,i)=>`<button class="${step==i?'on':''} ${(i>0&&(S.done||i<step))?'done':''}" onclick="go(${i})">${n}</button>`).join('');
+}
+function go(n){
+  if(n==4&&!S.done){toast('Bitte schliesse zuerst die Einrichtung ab (Schritte 1 bis 3).');return}
+  if(n==0){$('resume').style.display=S.done?'block':'none'}
+  if(n==1){fillStep1()} if(n==2){fillStep2()} if(n==3){fillStep3()} if(n==4){fillStep4()}
+  step=n;document.querySelectorAll('section').forEach(s=>s.classList.remove('on'));$('s'+n).classList.add('on');renderNav();renderBanners();markImp();window.scrollTo(0,0);
+}
+
+/* Step 1 */
+function fillStep1(){$('gw').value=S.garden.w;$('gl').value=S.garden.l;$('soil').value=S.garden.soil;$('sun').value=S.garden.sun;
+  const L=S.garden.loc;$('lat').value=L?L.lat:'';$('lon').value=L?L.lon:'';$('locq').value=L?L.name:'';
+  if(L)$('locMsg').textContent='Standort: '+L.name+' ('+L.lat+', '+L.lon+')'}
+const PLACES={'vaduz':[47.141,9.521],'schaan':[47.165,9.508],'triesen':[47.109,9.527],'balzers':[47.066,9.499],'triesenberg':[47.118,9.545],'eschen':[47.211,9.522],'mauren':[47.219,9.543],'ruggell':[47.236,9.528],'gamprin':[47.222,9.505],'schellenberg':[47.231,9.546],'planken':[47.175,9.545],'zürich':[47.377,8.542],'bern':[46.948,7.447],'basel':[47.56,7.589],'genf':[46.204,6.143],'lausanne':[46.52,6.632],'luzern':[47.05,8.309],'st. gallen':[47.425,9.377],'chur':[46.85,9.533],'lugano':[46.004,8.951],'winterthur':[47.499,8.724],'sargans':[47.049,9.443],'buchs':[47.167,9.477],'feldkirch':[47.239,9.598],'bregenz':[47.503,9.747],'innsbruck':[47.269,11.404],'wien':[48.208,16.374],'salzburg':[47.81,13.055],'graz':[47.071,15.44],'münchen':[48.135,11.582],'stuttgart':[48.776,9.183],'berlin':[52.52,13.405],'hamburg':[53.551,9.994],'köln':[50.938,6.96],'frankfurt':[50.111,8.682]};
+const norm=t=>t.toLowerCase().replace(/ä/g,'a').replace(/ö/g,'o').replace(/ü/g,'u').replace(/\s+/g,' ').trim();
+function showLocResults(list){
+  const sel=$('locres');
+  if(!list.length){sel.style.display='none';return}
+  sel.innerHTML=list.map((x,i)=>`<option value="${i}">${esc(x.name)} (${x.lat}, ${x.lon})</option>`).join('');
+  sel._list=list;sel.style.display='block';pickLoc();
+}
+function pickLoc(){const sel=$('locres'),x=sel._list&&sel._list[sel.value];if(x){$('lat').value=x.lat;$('lon').value=x.lon;$('locq').value=x.name;$('locMsg').textContent='Standort gewählt: '+x.name+'. Mit «Weiter» speichern.'}}
+async function searchLoc(){
+  const q=$('locq').value.trim();if(!q)return;
+  const nq=norm(q);
+  const local=Object.keys(PLACES).filter(k=>norm(k).startsWith(nq)||norm(k)===nq).map(k=>({name:k.replace(/(^|\s|\.)\S/g,c=>c.toUpperCase()),lat:PLACES[k][0],lon:PLACES[k][1]}));
+  if(local.length){showLocResults(local);return}
+  $('locMsg').textContent='Suche …';
+  try{
+    const r=await fetch('https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(q)+'&count=6&language=de');
+    const j=await r.json();
+    const list=(j.results||[]).map(x=>({name:x.name+(x.admin1?', '+x.admin1:'')+(x.country_code?' ('+x.country_code+')':''),lat:Math.round(x.latitude*1000)/1000,lon:Math.round(x.longitude*1000)/1000}));
+    if(list.length){showLocResults(list);return}
+    $('locMsg').textContent='Ort nicht gefunden. Bitte Koordinaten von Hand eintragen.';
+  }catch(e){$('locMsg').textContent='Die Ortssuche ist hier nicht verfügbar. Bitte einen Ort aus der Liste (z. B. Vaduz, Zürich, Feldkirch) eingeben oder die Koordinaten von Hand eintragen.'}
+}
+function readLoc(){
+  const lat=num('lat'),lon=num('lon');
+  if(lat===null||lon===null||lat<-90||lat>90||lon<-180||lon>180)return null;
+  return {name:$('locq').value.trim()||('Standort '+lat+', '+lon),lat,lon};
+}
+let GC=20,GR=28;
+function geom(){
+  const w=S.garden.w,l=S.garden.l,f=S.garden.format||'a4p';
+  let cols,rows,gcols,grows,ox,oy,cm,cellArea;
+  if(f==='rect'){
+    if(w>=l){cols=28;rows=Math.max(4,Math.round(28*l/w))}else{rows=28;cols=Math.max(4,Math.round(28*w/l))}
+    gcols=cols;grows=rows;ox=0;oy=0;cellArea=w*l/(cols*rows);cm=Math.round(Math.sqrt(cellArea)*100)/100;
+  }else{
+    cols=f==='a4l'?28:20;rows=f==='a4l'?20:28;
+    cm=Math.max(.25,Math.ceil(Math.max(w/cols,l/rows)*4)/4);
+    gcols=Math.min(cols,Math.max(1,Math.round(w/cm)));grows=Math.min(rows,Math.max(1,Math.round(l/cm)));
+    ox=Math.floor((cols-gcols)/2);oy=Math.floor((rows-grows)/2);cellArea=cm*cm;
+  }
+  GC=cols;GR=rows;
+  return {cm,cols,rows,gcols,grows,ox,oy,cellArea,f};
+}
+function snapshotSheet(){
+  const g=geom();
+  return {g,GC:g.cols,cells:S.cells.slice(),icells:S.icells.slice(),plants:S.plants.map(p=>({...p}))};
+}
+function reflow(snap){
+  const og=snap.g,crop=a=>{const o=[];for(let r=0;r<og.grows;r++)for(let c=0;c<og.gcols;c++)o.push(a[(og.oy+r)*snap.GC+og.ox+c]||'');return o};
+  geom();
+  S.cells=embed(crop(snap.cells),og.gcols,og.grows);
+  S.icells=embed(crop(snap.icells),og.gcols,og.grows);
+  S.plants=snap.plants.map(p=>({...p,...placePos(og.gcols>1?(p.c-og.ox)/(og.gcols-1):.5,og.grows>1?(p.r-og.oy)/(og.grows-1):.5)}));
+}
+function inGarden(i,g){const r=Math.floor(i/GC),c=i%GC;return r>=g.oy&&r<g.oy+g.grows&&c>=g.ox&&c<g.ox+g.gcols}
+function placePos(x,y){const g=geom();return {r:g.oy+Math.round(y*(g.grows-1)),c:g.ox+Math.round(x*(g.gcols-1))}}
+function embed(src,sc,sr){
+  const g=geom(),out=Array(GC*GR).fill(''),part=resample(src,sc,sr,g.gcols,g.grows);
+  for(let r=0;r<g.grows;r++)for(let c=0;c<g.gcols;c++)out[(g.oy+r)*GC+g.ox+c]=part[r*g.gcols+c];
+  return out;
+}
+function normalizeState(){
+  const g=S.garden;if(!g.soil)g.soil='loam';if(!g.sun)g.sun='1';
+  if(!['a4p','a4l','rect'].includes(g.format))g.format=(Array.isArray(S.cells)&&S.cells.length===560&&S.cells.some(Boolean))?'a4l':'a4p';
+  geom();
+  if(!Array.isArray(S.cells))S.cells=[];
+  if(!Array.isArray(S.plants))S.plants=[];
+  if(S.cells.length&&S.cells.length!==GC*GR){
+    const ocm=Math.max(.5,Math.ceil(Math.max(g.w,g.l)/20*2)/2),oc=Math.ceil(g.w/ocm),or=Math.ceil(g.l/ocm);
+    if(oc*or===S.cells.length){
+      S.plants=S.plants.map(p=>({...p,...placePos(oc>1?p.c/(oc-1):.5,or>1?p.r/(or-1):.5)}));
+      S.cells=embed(S.cells,oc,or);
+    }else{S.cells=[];S.plants=[]}
+  }
+  if(!S.cells.length)S.cells=Array(GC*GR).fill('');
+  if(!Array.isArray(S.icells)||S.icells.length!==GC*GR)S.icells=Array(GC*GR).fill('');
+  if(!Array.isArray(S.systems)){
+    S.systems=[];
+    const I=S.irr;
+    if(I&&I.type==='none')S.hasIrr=false;
+    else if(I&&SYS_TYPES.includes(I.type)){S.systems.push({name:IRR_NAMES[I.type],type:I.type,ctrl:I.ctrl||'none',nzones:I.nzones||1,bucket:I.bucket||null,covered:I.covered||null,rate:I.rate||null,days:I.days==null?3:I.days,mins:I.mins==null?20:I.mins,start:I.start||'',zones:[]});S.hasIrr=true}
+  }
+  if(S.hasIrr===undefined)S.hasIrr=null;
+  if(S.garden.format==='a4l'){const snap=snapshotSheet();S.garden.format='rect';reflow(snap)}
+}
+function saveStep1(){
+  const w=num('gw'),l=num('gl');
+  if(!w||!l||w<2||l<2){$('e1').textContent='Bitte gültige Breite und Länge angeben.';return}
+  $('e1').textContent='';
+  UNDO.length=0;const snap=snapshotSheet();
+  S.garden={w,l,soil:$('soil').value,sun:$('sun').value,loc:readLoc(),format:S.garden.format||'a4p'};
+  reflow(snap);
+  save();go(2);
+}
+
+/* Step 2 */
+let painting=false,planImgURL='',itool='1';
+const SYSCOL=['#1d5fa8','#c2410c','#7c3aed','#0f766e','#a16207','#be185d','#334155','#4d7c0f','#9f1239'];
+function blobToURL(b){return new Promise(r=>{const f=new FileReader();f.onload=()=>r(f.result);f.onerror=()=>r('');f.readAsDataURL(b)})}
+function sizeGrids(){
+  geom();
+  const avail=Math.min(window.innerWidth,900)-28-32-16;
+  const cs=Math.max(8,Math.min(Math.floor((avail-(GC-1))/GC),Math.floor(720/GR),32));
+  ['grid','grid3'].forEach(id=>{const e=$(id);if(e){e.style.setProperty('--cs',cs+'px');e.style.gridTemplateColumns='repeat('+GC+',var(--cs))'}});
+}
+const FMT_NAMES={a4p:'Standard',rect:'Rechteck passend zum Garten'};
+function changeFormat(v){
+  if(!FMT_NAMES[v]||v===S.garden.format)return;
+  UNDO.length=0;const snap=snapshotSheet();S.garden.format=v;reflow(snap);save();fillStep2();
+}
+window.addEventListener('resize',sizeGrids);
+function fillStep2(){
+  if(planImgURL){$('planRefImg').src=planImgURL;$('planRef').style.display='block'}else $('planRef').style.display='none';
+  const g=geom();sizeGrids();
+  $('fmt').value=g.f;
+  $('cellinfo').textContent=g.f==='rect'?`Der Plan ist ein Rechteck im Seitenverhältnis deines Gartens (${S.garden.w} × ${S.garden.l} m); ein Feld entspricht ca. ${g.cm}×${g.cm} m.`:`Der Plan zeigt dein Grundstück im Standardformat (A4 hoch); ein Feld entspricht ca. ${g.cm}×${g.cm} m. Grau schraffierte Felder liegen ausserhalb deines Gartens.`;
+  $('tools').innerHTML=Object.entries(ZONES).map(([k,z])=>`<div class="tool ${tool==k?'on':''}" onclick="setTool('${k}')"><span class="sw" style="background:${z.c}"></span>${z.n}</div>`).join('')
+    +`<div class="tool ${tool=='plant'?'on':''}" onclick="setTool('plant')">🌱 Pflanze setzen</div><div class="tool ${tool=='erase'?'on':''}" onclick="setTool('erase')">⌫ Radieren</div>`;
+  drawGrid('grid','z');drawPlants();updUndo();
+}
+function setTool(t){tool=t;fillStep2()}
+function plantAt(i){return S.plants.find(p=>p.r*GC+p.c===i)}
+function styleCell(d,i,mode,g){
+  d.className='cell';d.style.background='';d.textContent='';d.innerHTML='';
+  if(!inGarden(i,g)){d.classList.add('out');return}
+  const z=S.cells[i];
+  if(mode==='z'){
+    if(z)d.style.background=ZONES[z].c;
+    const p=plantAt(i);if(p)d.textContent=p.kind;
+  }else{
+    d.style.background=z?'color-mix(in srgb, '+ZONES[z].c+' 45%, white)':'#fff';
+    const s=S.icells[i];
+    if(s)d.innerHTML='<span class="dot" style="background:'+SYSCOL[(s-1)%9]+'">'+s+'</span>';
+  }
+}
+function drawGrid(hostId,mode){
+  const host=$(hostId),g=geom(),frag=document.createDocumentFragment();
+  host.innerHTML='';
+  for(let i=0;i<GC*GR;i++){const d=document.createElement('div');d.dataset.i=i;styleCell(d,i,mode,g);frag.appendChild(d)}
+  host.appendChild(frag);
+  if(mode==='z')updateAreas();else updateIrrAreas();
+}
+function areaOf(){const ca=geom().cellArea,a={};S.cells.forEach(z=>{if(z)a[z]=(a[z]||0)+ca});return a}
+function updateAreas(){
+  const a=areaOf();
+  $('areas').innerHTML=Object.keys(a).length?'Flächen (ca.): '+Object.entries(a).map(([k,v])=>`<b>${ZONES[k].n}</b> ${Math.round(v)} m²`).join(' · '):'Noch nichts eingezeichnet.';
+}
+function updateIrrAreas(){
+  const ca=geom().cellArea,c={};S.icells.forEach(s=>{if(s)c[s]=(c[s]||0)+ca});
+  $('irrAreas').innerHTML=Object.keys(c).length?'Im Plan eingezeichnet: '+Object.entries(c).map(([k,v])=>`<b>System ${k}</b> ${Math.round(v)} m²`).join(' · '):'Noch keine Bewässerung eingezeichnet.';
+}
+function cellFromEvent(e){const el=document.elementFromPoint(e.clientX,e.clientY);return el&&el.classList.contains('cell')&&el.parentNode&&el.parentNode.classList.contains('pgrid')?parseInt(el.dataset.i):null}
+function paintAt(hostId,mode,i){
+  if(i===null)return;const g=geom();if(!inGarden(i,g))return;
+  if(mode==='z'){if(tool==='plant')return;S.cells[i]=tool==='erase'?'':tool}
+  else{if(!S.systems.length)return;S.icells[i]=itool==='erase'?'':parseInt(itool)}
+  styleCell($(hostId).children[i],i,mode,g);
+  if(mode==='z')updateAreas();else updateIrrAreas();
+}
+function attachGrid(hostId,mode){
+  const h=$(hostId);let on=false;
+  h.addEventListener('pointerdown',e=>{
+    const i=cellFromEvent(e);if(i===null)return;
+    if(mode==='z'&&tool==='plant'){if(inGarden(i,geom()))openPF(i);return}
+    pushUndo();on=true;paintAt(hostId,mode,i);
+  });
+  h.addEventListener('pointermove',e=>{if(on)paintAt(hostId,mode,cellFromEvent(e))});
+  window.addEventListener('pointerup',()=>{if(on){on=false;save()}});
+}
+attachGrid('grid','z');attachGrid('grid3','i');
+function openPF(i){
+  pending=i;const r=Math.floor(i/GC),c=i%GC;
+  $('pfPos').textContent=`Reihe ${r+1}, Spalte ${c+1}`;$('pfName').value='';$('pfNew').checked=false;$('plantForm').style.display='block';$('pfName').focus();
+}
+function closePF(){$('plantForm').style.display='none';pending=null}
+function addPlant(){
+  const n=$('pfName').value.trim();if(!n||pending===null){return}
+  const r=Math.floor(pending/GC),c=pending%GC;
+  pushUndo();
+  S.plants=S.plants.filter(p=>!(p.r===r&&p.c===c));
+  S.plants.push({r,c,name:n,kind:$('pfKind').value,isNew:$('pfNew').checked});
+  save();closePF();drawGrid('grid','z');drawPlants();
+}
+function drawPlants(){
+  $('plist').innerHTML=S.plants.length?S.plants.map((p,i)=>{
+    const z=S.cells[p.r*GC+p.c];
+    return `<div><span>${p.kind} <b>${esc(p.name)}</b>${p.isNew?' (neu)':''} · ${z?ZONES[z].n:'<i>keine Zone</i>'}</span><button class="btn sec sm" onclick="delPlant(${i})">Entfernen</button></div>`}).join(''):'<span class="hint">Noch keine Pflanzen eingetragen (optional).</span>';
+}
+function delPlant(i){pushUndo();S.plants.splice(i,1);save();drawGrid('grid','z');drawPlants()}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function saveStep2(){
+  const a=areaOf(),w=Object.keys(a).filter(k=>ZONES[k].watered);
+  if(!w.length){$('e2').textContent='Bitte zeichne mindestens eine Zone (z. B. Rasen) ein.';return}
+  $('e2').textContent='';save();go(3);
+}
+
+/* Step 3 */
+function sysOpt(v,t,cur){return `<option value="${v}"${cur===v?' selected':''}>${t}</option>`}
+function fillStep3(){
+  document.querySelectorAll('input[name=hi]').forEach(r=>{
+    r.checked=(S.hasIrr===true&&r.value==='yes')||(S.hasIrr===false&&r.value==='no');
+    r.onchange=()=>{S.hasIrr=r.value==='yes';if(S.hasIrr&&!S.systems.length)addSystem();toggleIrr();save()};
+  });
+  toggleIrr();
+}
+function toggleIrr(){
+  $('irrWrap').style.display=S.hasIrr?'block':'none';
+  updUndo();
+  if(S.hasIrr){sizeGrids();$('fmtNote').textContent='Planformat: '+FMT_NAMES[S.garden.format]+' (änderbar in Schritt 2).';renderSystems();renderITools();drawGrid('grid3','i')}
+}
+function renderSystems(){
+  const a=areaOf(),zs=Object.keys(a).filter(k=>ZONES[k].watered);
+  $('sysList').innerHTML=S.systems.map((s,i)=>{
+    const man=s.type==='manual',imp=S.imp&&S.imp.sys&&!s._seen;
+    const num=(k,lab,extra)=>`<div><label>${lab}</label><input type="number" data-k="${k}" value="${s[k]==null?'':s[k]}" ${extra||''}></div>`;
+    return `<div class="card syscard${imp?' imp':''}" data-i="${i}" style="border-left:6px solid ${SYSCOL[i%9]}">
+      <h3 style="margin-top:0">System ${i+1} <span class="small">(Nr. ${i+1} im Plan)</span></h3>
+      <div class="row">
+        <div><label>Name</label><input type="text" data-k="name" value="${esc(s.name||'')}"></div>
+        <div><label>Art${qm('art')}</label><select data-k="type">${sysOpt('pop','Versenkregner (fest installiert)',s.type)}${sysOpt('square','Viereckregner',s.type)}${sysOpt('impulse','Impulsregner',s.type)}${sysOpt('circle','Kreisregner',s.type)}${sysOpt('sector','Sektorenregner',s.type)}${s.type==='mobile'?sysOpt('mobile','Mobiler Regner (allgemein)',s.type):''}${sysOpt('drip','Tropfbewässerung',s.type)}${sysOpt('manual','Von Hand (Giesskanne / Schlauch)',s.type)}</select></div>
+      </div>
+      ${man?'':`<div class="row">
+        <div><label>Steuerung${qm('ctrl')}</label><select data-k="ctrl">${sysOpt('none','Keine (manuell ein-/ausschalten)',s.ctrl)}${sysOpt('timer','Zeitschaltuhr / Bewässerungscomputer',s.ctrl)}${sysOpt('rain','Zeitschaltuhr + Regensensor',s.ctrl)}${sysOpt('smart','Bodenfeuchtesensor (z. B. smart Sensor)',s.ctrl)}</select></div>
+      </div>
+      <details class="guide"><summary>So misst du, wie viel Wasser herauskommt (Eimertest, 2 Minuten)</summary><ol><li>Stelle einen 10-Liter-Eimer unter den Wasserhahn, an dem diese Bewässerung hängt (oder halte den Schlauch hinein).</li><li>Drehe das Wasser ganz auf und stoppe die Sekunden, bis der Eimer voll ist.</li><li>Trage die Sekunden unten bei «Eimerfüllzeit» ein und daneben die Fläche in m², die dieses System bewässert.</li></ol>Ohne diese Angaben rechnet die App mit einem Schätzwert für diese Art von Regner – die Laufzeiten sind dann ungenauer.</details>
+      <details class="guide"><summary>Genauer bei Regnern: der Dosen-Test (20 Minuten)</summary><ol><li>Verteile 4 bis 6 gleiche Gefässe mit geradem Rand (leere Konservendosen, Gläser) auf der bewässerten Fläche.</li><li>Lass den Regner genau 15 Minuten laufen.</li><li>Miss mit einem Lineal, wie hoch das Wasser in jedem Gefäss steht (in Millimetern), und rechne den Durchschnitt.</li><li>Nimm den Durchschnitt mal 4 und trage die Zahl unter «Weitere Angaben» bei «Wasserleistung der Anlage» ein. Beispiel: 3 mm im Schnitt ergeben 12.</li></ol>Steht das Wasser in den Gefässen sehr unterschiedlich hoch, verteilt der Regner ungleichmässig.</details>
+      <div class="row">${num('bucket','Eimerfüllzeit 10 L (Sekunden)','min="1" max="600"')}${num('covered','Bewässerte Fläche (m²)'+qm('covered'),'min="1"')}</div>
+      <div class="row">${num('days','Tage pro Woche','min="0" max="7"')}${num('mins','Minuten pro Lauf','min="0" max="240"')}<div><label>Startzeit</label><input type="text" data-k="start" value="${esc(s.start||'')}" placeholder="z. B. 05:30"></div></div>
+      <details class="guide"${(s.rate||s.nzones>1)?' open':''}><summary>Weitere Angaben (nur falls du sie kennst)</summary><div class="row">${num('nzones','Ventile / Kreise'+qm('valves'),'min="1" max="12"')}${num('rate','Wasserleistung der Anlage (mm pro Stunde)'+qm('rate'),'min="0.5" max="60" step="0.5"')}</div></details>`}
+      <label>Versorgt diese Zonen <span class="small" style="font-weight:400">(nur nötig, wenn nicht im Plan eingezeichnet)</span>${qm('serves')}</label>
+      <div class="zchk">${zs.map(k=>`<label class="chk"><input type="checkbox" data-k="zone" data-z="${k}" ${(s.zones||[]).includes(k)?'checked':''}> ${ZONES[k].n}</label>`).join('')||'<span class="hint">Zeichne zuerst Zonen in Schritt 2.</span>'}</div>
+      <div class="actions" style="justify-content:flex-end"><button class="btn sec sm" onclick="delSystem(${i})">System entfernen</button></div>
+    </div>`}).join('');
+}
+function onSysEdit(e){
+  const t=e.target,card=t.closest&&t.closest('.syscard');if(!card||!t.dataset.k)return;
+  const s=S.systems[+card.dataset.i];if(!s)return;
+  const k=t.dataset.k;s._seen=true;card.classList.remove('imp');
+  if(k==='zone'){const z=t.dataset.z;s.zones=(s.zones||[]).filter(x=>x!==z);if(t.checked)s.zones.push(z)}
+  else if(t.type==='number')s[k]=t.value===''?null:parseFloat(t.value);
+  else s[k]=t.value;
+  save();
+  if(e.type==='change'&&(k==='type'))renderSystems();
+  if(e.type==='change'&&(k==='name'||k==='type'))renderITools();
+}
+$('sysList').addEventListener('input',onSysEdit);$('sysList').addEventListener('change',onSysEdit);
+function addSystem(){
+  if(S.systems.length>=9)return;
+  S.systems.push({name:'System '+(S.systems.length+1),type:'pop',ctrl:'none',nzones:1,bucket:null,covered:null,rate:null,days:3,mins:20,start:'',zones:[]});
+  save();if(S.hasIrr){renderSystems();renderITools()}
+}
+function delSystem(i){
+  S.systems.splice(i,1);
+  S.icells=S.icells.map(v=>!v?'':(v===i+1?'':(v>i+1?v-1:v)));
+  if(parseInt(itool)>S.systems.length)itool='1';
+  save();renderSystems();renderITools();drawGrid('grid3','i');
+}
+function renderITools(){
+  $('itools').innerHTML=S.systems.map((s,i)=>`<div class="tool ${itool==String(i+1)?'on':''}" onclick="setITool('${i+1}')"><span class="sw" style="background:${SYSCOL[i%9]}"></span>System ${i+1}: ${esc(s.name||'')}</div>`).join('')
+    +`<div class="tool ${itool==='erase'?'on':''}" onclick="setITool('erase')">⌫ Radieren</div>`;
+}
+function setITool(t){itool=t;renderITools()}
+function planUebernehmen(){
+  S.hasIrr=true;save();fillStep3();
+  const t=$('irrUpload');if(t)t.scrollIntoView({behavior:'smooth',block:'start'});
+  try{$('irrFile').click()}catch(e){}
+}
+let irrBusy=false;
+function irrChosen(id,other){$(other).value='';$('irrStatus').textContent='';if($(id).files[0])doIrrImport()}
+async function readMaterial(f,pasted){
+  let text=pasted||'',blobs=[];
+  if(f){
+    const nm=f.name.toLowerCase();
+    if(f.type.startsWith('image/')||/\.(png|jpe?g|webp)$/.test(nm))blobs.push(await shrinkImage(f));
+    else if(nm.endsWith('.pdf')){const r=await readPdf(f);text+='\n'+r.text;blobs=r.images}
+    else text+='\n'+await f.text();
+  }
+  return {text,blobs};
+}
+async function doIrrImport(){
+  const st=(t,bad)=>{const e=$('irrStatus');e.textContent=t;e.className='status'+(bad?' err2':'')};
+  const f=$('irrFile').files[0]||$('irrPhoto').files[0];
+  if(!f){st('Bitte eine Datei wählen oder ein Foto aufnehmen.',true);return}
+  if(irrBusy)return;irrBusy=true;
+  try{
+    st('Wird gelesen …');
+    let mat;try{mat=await readMaterial(f,'')}catch(e){st('Die Datei konnte nicht gelesen werden. Bitte lade ein Bild (PNG/JPG) hoch.',true);return}
+    let n=null;
+    try{st('Die Bewässerung wird automatisch ausgewertet … (kann bis zu einer Minute dauern)');n=await aiIrr(mat.blobs,mat.text)}catch(e){n=null}
+    if(!n||!Array.isArray(n.systems)||!n.systems.length){
+      const l=sysFromLegacy(parseText(mat.text).irr);
+      if(!l){st('Es konnte keine Bewässerung erkannt werden (oder die automatische Auswertung ist nicht verfügbar). Bitte gib sie von Hand ein.',true);return}
+      n={systems:[l],grid:null};
+    }
+    const added=applyIrr(n);
+    st(added?'✅ '+added+' System(e) hinzugefügt'+(S.icells.some(Boolean)?' und im Plan eingezeichnet':'')+'. Bitte prüfen und korrigieren.':'Es ist kein Platz für weitere Systeme (maximal 9).');
+  }finally{irrBusy=false;$('irrFile').value='';$('irrPhoto').value=''}
+}
+function applyIrr(n){
+  const room=9-S.systems.length;
+  const sys=(n.systems||[]).map(normSys).filter(Boolean).slice(0,Math.max(0,room));
+  const off=S.systems.length;
+  sys.forEach((x,i)=>{if(!x.name||x.name==='System')x.name='System '+(off+i+1)});
+  S.systems=S.systems.concat(sys);S.hasIrr=S.systems.length>0;
+  geom();
+  if(!Array.isArray(S.icells)||S.icells.length!==GC*GR)S.icells=Array(GC*GR).fill('');
+  const g=n.grid;
+  if(sys.length&&g&&g.keys&&g.keys.length===g.cols*g.rows&&g.keys.some(Boolean)){
+    const em=embed(g.keys.map(v=>{v=parseInt(v);return v>=1&&v<=sys.length?v+off:''}),g.cols,g.rows);
+    S.icells=S.icells.map((v,i)=>v||em[i]||'');
+  }
+  S.imp={...(S.imp||{label:'Plan',hl:[],missing:[],notes:[],zones:false,plantsN:0,defaults:[]}),sys:true,missing:sysMissing(sys)};
+  save();fillStep3();renderBanners();
+  return sys.length;
+}
+function sysMissing(sys){
+  const m=new Set();
+  sys.forEach(s=>{if(s.type==='manual')return;
+    if(!s.bucket&&!s.rate)m.add('Eimerfüllzeit oder Niederschlagsrate');
+    if(s.days==null)m.add('Tage pro Woche');if(s.mins==null)m.add('Minuten pro Lauf')});
+  return [...m];
+}
+function saveStep3(){
+  if(S.hasIrr===null||S.hasIrr===undefined){$('e3').textContent='Bitte wähle «Ja» oder «Nein».';return}
+  if(S.hasIrr&&!S.systems.length){$('e3').textContent='Bitte lege mindestens ein Bewässerungssystem an oder wähle «Nein».';return}
+  S.done=true;S.imp=null;S.systems.forEach(s=>{delete s._seen});save();$('e3').textContent='';go(4);
+}
+
+/* Step 4 */
+function ago(d){const n=Math.round((new Date(new Date().toISOString().slice(0,10))-new Date(d))/864e5);return n<=0?'heute':n===1?'gestern':'vor '+n+' Tagen'}
+function fmtD(d){const [y,m,dd]=d.split('-');return dd+'.'+m+'.'+y}
+let fcCache=null,s4Init=false;
+function markPre(el){if(el&&el.value!=='')el.classList.add('pre')}
+function updPre(){const any=!!document.querySelector('#s4 .pre');$('preBox').style.display=any?'flex':'none';if(!any)$('preOk').checked=false}
+function clearPre(){document.querySelectorAll('#s4 .pre').forEach(e=>e.classList.remove('pre'));updPre()}
+function fillStep4(){
+  const dN=DEMO?demoDate():new Date(),today=dN.getFullYear()+'-'+String(dN.getMonth()+1).padStart(2,'0')+'-'+String(dN.getDate()).padStart(2,'0');
+  $('cdate').value=today;
+  $('cdateTxt').textContent=(DEMO?'Beispieltag der Demo: ':'Heute: ')+['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'][dN.getDay()]+', '+fmtD(today);
+  const a=areaOf(),ks=Object.keys(a).filter(k=>ZONES[k].watered);
+  const opts='<option value="">– bitte wählen –</option>'+Object.entries(FINGER).map(([k,v])=>`<option value="${k}">${v.t}</option>`).join('');
+  const old={};ks.forEach(k=>{const e=$('m_'+k);if(e)old[k]=[e.value,$('ms_'+k).value,e.classList.contains('pre'),$('ms_'+k).classList.contains('pre')]});
+  $('moist').innerHTML=ks.map(k=>`<div class="row" style="align-items:end"><div><label for="m_${k}">${ZONES[k].n}</label><select id="m_${k}">${opts}</select></div><div><label for="ms_${k}" style="font-weight:500">Messgerät-Wert in % (falls vorhanden)</label><input type="number" id="ms_${k}" min="0" max="60" step="0.5"></div></div>`).join('');
+  const L=S.last,first=!s4Init;s4Init=true;
+  ks.forEach(k=>{
+    const m=$('m_'+k),ms=$('ms_'+k);
+    if(old[k]){m.value=old[k][0];ms.value=old[k][1];if(old[k][2])markPre(m);if(old[k][3])markPre(ms)}
+    else if(L&&L.moist&&L.moist[k]){m.value=L.moist[k][0];ms.value=L.moist[k][1];markPre(m);markPre(ms)}
+  });
+  const age=L?Math.max(0,Math.round((new Date(today)-new Date(L.date))/864e5)):0;
+  if(first&&L){
+    ['r24','r27'].forEach(k=>{if($(k).value===''&&L[k]!=null){$(k).value=L[k];markPre($(k))}});
+    if(!$('lastirr').value){const pv=parseInt(L.lastirr);const v=pv===9?9:(pv+age<=0?0:pv+age===1?1:pv+age<=3?2:5);$('lastirr').value=String(v);markPre($('lastirr'))}
+  }
+  if(L){
+    $('lastNote').innerHTML='<div class="alert i"><b>Willkommen zurück!</b> Dein letzter Eintrag ist vom '+fmtD(L.date)+' ('+(age<=0?'heute':age===1?'gestern':'vor '+age+' Tagen')+'). So geht es weiter:<ol class="steps"><li>Prüfe unten Regen, Bodenfeuchte und letzte Bewässerung. <b>Blau markierte Felder sind vorbelegt</b> – ändere sie, wenn sie nicht mehr stimmen.</li><li>Tippe auf «Wetter holen und Empfehlung berechnen».</li><li>Die App zeigt dir, was heute zu tun ist.</li></ol>'+(age>=3?'<b>Seit dem letzten Eintrag sind '+age+' Tage vergangen.</b> Mach bitte die Fingerprobe neu – der Boden hat sich seither sicher verändert.':'')+'</div>';
+  }else $('lastNote').innerHTML='<p class="hint">Diese Angaben ändern sich ständig und werden jedes Mal neu abgefragt. Beim nächsten Öffnen sind sie mit deinen letzten Werten vorbelegt.</p>';
+  $('locName').textContent=S.garden.loc?'für '+S.garden.loc.name:'';
+  updPre();renderDemoGuide();
+  if(first)prefetchRain();
+}
+async function prefetchRain(){
+  if(!S.garden.loc)return;
+  try{
+    const f=await fetchForecast();fcCache={f,t:Date.now()};
+    let used=false;
+    [['r24','past24'],['r27','past27']].forEach(([id,k])=>{const e=$(id);if(e.value===''||e.classList.contains('pre')){e.value=f[k];e.classList.add('pre');used=true}});
+    $('pastHint').textContent=(DEMO?'Beispielwerte der Demo: ':'Laut Wetterdienst für '+S.garden.loc.name+': ')+'letzte 24 Std. '+f.past24+' mm, in den 6 Tagen davor zusammen '+f.past27+' mm.'+(used?' Diese Werte sind als Vorschlag eingetragen – vergleiche sie mit deinem Regenmesser, falls du einen hast.':'');
+    updPre();
+  }catch(e){}
+}
+function checkPartA(){
+  const err=m=>{$('e4').textContent=m;return false};
+  if(!$('cdate').value)return err('Bitte Datum angeben.');
+  if(!$('lastirr').value)return err('Bitte angeben, wann zuletzt bewässert wurde.');
+  const a=areaOf(),ks=Object.keys(a).filter(k=>ZONES[k].watered);
+  for(const k of ks){if(!$('m_'+k).value&&$('ms_'+k).value==='')return err('Bitte Bodenfeuchtigkeit für «'+ZONES[k].n+'» angeben (Fingerprobe oder Sensor).')}
+  if(document.querySelector('#s4 .pre')&&!$('preOk').checked)return err('Bitte prüfe die blau markierten Werte: Ändere sie oder bestätige sie unten mit dem Häkchen.');
+  $('e4').textContent='';return true;
+}
+const fv=(a,b,x)=>{let t=0;for(let i=Math.max(0,a);i<Math.min(x.length,b);i++)t+=x[i]||0;return Math.round(t*10)/10};
+async function fetchForecast(){
+  if(DEMO)return {...DEMO_SCS[demoSc].wx,at:'',demo:true};
+  const L=S.garden.loc;if(!L)throw Object.assign(new Error('Kein Standort hinterlegt.'),{code:'noloc'});
+  const url='https://api.open-meteo.com/v1/forecast?latitude='+L.lat+'&longitude='+L.lon+'&hourly=precipitation&daily=temperature_2m_max,temperature_2m_min,wind_speed_10m_max&timezone=auto&past_days=7&forecast_days=8&wind_speed_unit=kmh';
+  const ctrl=new AbortController(),to=setTimeout(()=>ctrl.abort(),12000);
+  let j;try{const r=await fetch(url,{signal:ctrl.signal});if(!r.ok)throw new Error('HTTP '+r.status);j=await r.json()}finally{clearTimeout(to)}
+  const loc=new Date(Date.now()+(j.utc_offset_seconds||0)*1000).toISOString();
+  const i=j.hourly.time.findIndex(t=>t.slice(0,13)===loc.slice(0,13));
+  if(i<0)throw new Error('Unerwartete Antwort des Wetterdienstes.');
+  const pr=j.hourly.precipitation,d=j.daily,di=Math.max(0,d.time.indexOf(loc.slice(0,10)));
+  const sl=k=>d[k].slice(di,di+3).filter(x=>x!==null);
+  return {
+    past24:fv(i-23,i+1,pr),past27:fv(i-167,i-23,pr),
+    f24:fv(i+1,i+25,pr),f23:fv(i+25,i+73,pr),f47:fv(i+73,i+169,pr),
+    tmax:Math.round(sl('temperature_2m_max').reduce((a,b)=>a+b,0)/sl('temperature_2m_max').length*10)/10,
+    tmin:Math.min(...sl('temperature_2m_min')),
+    wind:Math.round(Math.max(...sl('wind_speed_10m_max'))),
+    at:new Date().toLocaleTimeString('de-CH',{hour:'2-digit',minute:'2-digit'})
+  };
+}
+async function stepWeather(){
+  if(!checkPartA())return;
+  clearPre();
+  $('fcCard').style.display='block';$('result').innerHTML='';$('e5').textContent='';
+  const st=$('fcStatus');st.className='status';st.textContent='Wetterprognose wird abgerufen …';
+  $('fcBtn').disabled=true;
+  try{
+    const f=(fcCache&&Date.now()-fcCache.t<18e5)?fcCache.f:await fetchForecast();
+    ['f24','f23','f47','tmax','tmin','wind'].forEach(k=>$(k).value=f[k]);
+    st.textContent=f.demo?'🧪 Beispielwetter der Demo. Bei deinem eigenen Garten steht hier die Prognose für deinen Ort. Du kannst die Werte unten ändern und neu berechnen.':'✅ Prognose für '+S.garden.loc.name+' von Open-Meteo, abgerufen um '+f.at+' Uhr. Du kannst die Werte unten übersteuern.';
+    $('pastHint').textContent=(f.demo?'Beispielwerte der Demo: ':'Zum Vergleich laut Wetterdienst: ')+'letzte 24 Std. '+f.past24+' mm, in den 6 Tagen davor zusammen '+f.past27+' mm.';
+    calc();
+  }catch(e){
+    st.className='status err2';
+    st.textContent=e.code==='noloc'
+      ?'Kein Standort hinterlegt (Schritt 1) – bitte die Prognose von Hand eintragen.'
+      :'Die Wetterprognose konnte nicht automatisch geladen werden. Bitte trage sie unten von Hand ein, z. B. aus dem Wetterbericht von MeteoSchweiz.';
+    $('fcCard').scrollIntoView({behavior:'smooth'});
+  }finally{$('fcBtn').disabled=false}
+}
+function normSys(o){
+  if(!o||!SYS_TYPES.includes(o.type))return null;
+  const t=v=>v===null||v===undefined||v===''?null:v;
+  return {name:String(o.name||'').slice(0,40),type:o.type,
+    ctrl:['none','timer','rain','smart'].includes(o.ctrl)?o.ctrl:'none',
+    nzones:clampN(o.nzones,1,12)||1,bucket:clampN(t(o.bucket),1,600),covered:clampN(t(o.covered),1,5000),rate:clampN(t(o.rate),.5,60),
+    days:clampN(t(o.days),0,7),mins:clampN(t(o.mins),0,240),start:/^\d{1,2}:\d{2}$/.test(String(o.start||''))?o.start:'',
+    zones:(Array.isArray(o.zones)?o.zones:[]).filter(z=>ZONES[z]&&ZONES[z].watered)};
+}
+function sysFromLegacy(I){
+  if(!I||!SYS_TYPES.includes(I.type))return null;
+  return normSys({...I,name:IRR_NAMES[I.type]});
+}
+function calc(){
+  const err=m=>{$('e5').textContent=m;return};
+  if(!checkPartA())return;
+  for(const k of ['tmax','tmin']){if(num(k)===null)return err('Bitte die beiden Temperaturen eintragen. Leere Felder bei Regen und Wind zählen als 0.')}
+  $('e5').textContent='';
+  const a=areaOf(),ks=Object.keys(a).filter(k=>ZONES[k].watered);
+  const z0=k=>num(k)||0;
+  const r24=z0('r24'),r27=z0('r27'),f24=z0('f24'),f23=z0('f23'),f47=z0('f47'),tmax=num('tmax'),tmin=num('tmin'),wind=z0('wind');
+  const lastirr=parseInt($('lastirr').value);
+  {const mo={};ks.forEach(k=>{mo[k]=[$('m_'+k).value,$('ms_'+k).value]});S.last={date:$('cdate').value,r24,r27,lastirr:$('lastirr').value,moist:mo};save()}
+  const month=new Date($('cdate').value).getMonth();
+  const soil=SOIL[S.garden.soil],sun=parseFloat(S.garden.sun);
+  const tf=Math.max(.4,Math.min(2,1+.05*(tmax-TMAX_M[month])));
+  const et0=ET_M[month]*tf*sun;
+  const systems=S.hasIrr?S.systems:[];
+  const anyAssign=S.icells.some(Boolean)||systems.some(s=>(s.zones||[]).length);
+  const zoneSys=k=>{
+    const cnt={};let tot=0;
+    S.cells.forEach((z,i)=>{if(z===k){tot++;const s=S.icells[i];if(s)cnt[s]=(cnt[s]||0)+1}});
+    const ids=Object.keys(cnt).sort((x,y)=>cnt[y]-cnt[x]);
+    if(ids.length&&systems[ids[0]-1])return {idx:ids[0]-1,sys:systems[ids[0]-1],cover:cnt[ids[0]]/tot,assumed:false};
+    const i=systems.findIndex(s=>(s.zones||[]).includes(k));
+    if(i>=0)return {idx:i,sys:systems[i],cover:1,assumed:true};
+    if(!anyAssign&&systems.length===1)return {idx:0,sys:systems[0],cover:1,assumed:true};
+    return {idx:-1,sys:null,cover:0,assumed:false};
+  };
+  const frost=tmin<=1, soaked=r24>=10, rainSoon=f24>=8;
+  const effRain=(m)=>m<2?0:m*.8;
+  const effF=effRain(f24+f23);
+  const dormant=month>=10||month<=1||tmax<5;
+  const fixedPipes=systems.some(s=>s.type==='pop'||s.type==='drip');
+  const globalAlerts=[];
+  if(frost)globalAlerts.push(['r','<b>Frostgefahr (Tiefstwert '+tmin+' °C):</b> nicht bewässern. '+(fixedPipes?'Fest verlegte Leitungen und Ventile entleeren (Ablasshahn bzw. Entwässerungsventil öffnen), damit nichts platzt.':'Schläuche und Aussenhahn entleeren.')]);
+  if(soaked)globalAlerts.push(['i','<b>In den letzten 24 Std. fielen '+r24+' mm:</b> der Boden ist gut versorgt – heute pausieren.']);
+  if(rainSoon&&!soaked)globalAlerts.push(['i','<b>Bald '+f24+' mm Regen erwartet:</b> Bewässerung lieber abwarten.']);
+  if(wind>=25)globalAlerts.push(['w','<b>Starker Wind ('+wind+' km/h):</b> Regner verteilen ungleichmässig, viel Wasser verdunstet. Besser bei Windstille (früh morgens) giessen.']);
+  if(dormant&&!frost)globalAlerts.push(['i','<b>Kühle Jahreszeit:</b> Die Pflanzen wachsen jetzt kaum und brauchen wenig Wasser. Nur immergrüne Pflanzen, neu gepflanzte Sträucher und Bäume sowie Kübelpflanzen bei langer Trockenheit prüfen.']);
+  const timers=systems.filter(s=>s.type!=='manual'&&s.ctrl==='timer');
+  if(timers.length&&(r24>=5||f24>=5))globalAlerts.push(['w','<b>'+timers.map(s=>esc(s.name)).join(', ')+':</b> Die Zeitschaltuhr läuft ohne Rücksicht auf Regen – Bewässerung heute <b>manuell aussetzen</b> bzw. Regensensor / Pausenfunktion nutzen.']);
+  const needPlan=systems.length>1&&!anyAssign;
+  if(needPlan)globalAlerts.push(['w','Mehrere Bewässerungssysteme sind keiner Zone zugeordnet. Zeichne sie in Schritt 3 im Plan ein oder wähle die versorgten Zonen – bis dahin gelten die Mengen für Handbewässerung.']);
+
+  const zres=[],sysNeed={};
+  for(const k of ks){
+    const z=ZONES[k],area=a[k];
+    const newPlants=S.plants.filter(p=>S.cells[p.r*GC+p.c]===k&&p.isNew);
+    const root=z.root*(newPlants.length?.6:1);
+    const taw=root*10*(soil.fc-soil.wp)/100,raw=taw*.5;
+    let d0,src;
+    const sv=$('ms_'+k).value;
+    if(sv!==''){const th=parseFloat(sv);d0=Math.max(0,root*10*(soil.fc-th)/100);src='Sensor '+th+' %'}
+    else{const st=parseInt($('m_'+k).value);d0=FINGER[st].f*raw;src=FINGER[st].t}
+    const wet=sv!==''?parseFloat(sv)>=soil.fc-1:(parseInt($('m_'+k).value)===5);
+    const kc=z.kc,dem3=kc*et0*3;
+    const proj=Math.max(0,d0+dem3-effF);
+    const trigger=z.trig*raw;
+    const warns=[];
+    let status,reason,mm=0;
+    if(sv===''&&parseInt($('m_'+k).value)<=2&&r24>=10)warns.push('Boden wird als trocken gemeldet, obwohl gestern '+r24+' mm fielen – Fingerprobe wiederholen (tiefer graben); Regen kann bei verkrusteter Oberfläche abfliessen.');
+    if(sv===''&&parseInt($('m_'+k).value)===5&&lastirr<=1)warns.push('Boden ist nass und es wurde kürzlich bewässert: Bewässerungsmenge reduzieren, sonst Staunässe.');
+    if(wet){status='stop';reason='Boden ist bereits nass – jetzt Wasser zu geben schadet (Wurzelfäule, Pilze).'}
+    else if(frost){status='stop';reason='Frostgefahr – nicht bewässern.'}
+    else if(soaked){status='no';reason='Genug Regen in den letzten 24 Std.'}
+    else if(rainSoon&&d0<raw){status='no';reason='Regen steht bevor, der Boden hat noch Reserve.'}
+    else if(proj<trigger||d0<.15*raw){status='wait';reason='Im Boden ist noch genug Wasser.'}
+    else{
+      status='go';
+      const cap=Math.min((k==='lawnS'?.8:1)*raw,z.max||99);
+      mm=Math.min(proj,cap);
+      if(proj-mm>0.1*raw)reason='Der Boden ist sehr trocken und kann nicht alles auf einmal aufnehmen. Gib heute diese Menge und prüfe in 1–2 Tagen nochmals.';
+      else reason='Das Wasser im Boden wird in den nächsten Tagen knapp.';
+      if(k==='lawnS')reason+=' Empfindliche Stelle: lieber früher, dafür kürzer giessen.';
+    }
+    const zs=zoneSys(k),sy=zs.sys;
+    const rate=(sy&&sy.type!=='manual')?rateOf(sy):null;
+    const litres=mm*area;
+    const mins=(rate&&mm>0)?mm/rate*60:null;
+    let daysNext=status==='go'?Math.max(1,Math.min(7,Math.round(raw*(1-z.trig+.3)/(kc*et0||1)))):(status==='wait'?Math.max(1,Math.min(7,Math.floor((trigger-Math.max(0,d0-effF))/(kc*et0||1)))):2);
+    if(status==='go'&&proj-mm>0.1*raw)daysNext=2;
+    const wk=Math.max(0,kc*et0*7-effRain(f24+f23+f47));
+    if(zs.idx>=0){const q=sysNeed[zs.idx]||(sysNeed[zs.idx]={num:0,den:0});q.num+=wk*area;q.den+=area}
+    const plants=S.plants.filter(p=>S.cells[p.r*GC+p.c]===k).map(p=>p.kind+' '+esc(p.name)).join(', ');
+    zres.push({k,z,area,d0,src,raw,status,reason,mm,litres,mins,rate,sy,cover:zs.cover,assumed:zs.assumed,daysNext,warns,plants,newPlants:newPlants.length});
+  }
+  render(zres,globalAlerts,{et0,frost,soaked,systems,sysNeed});
+}
+function rateOf(I){
+  if(I.rate)return I.rate;
+  if(I.bucket&&I.covered)return (600/I.bucket)*60/I.covered;
+  return DEF_RATE[I.type];
+}
+function render(zr,ga,ctx){
+  const anyGo=zr.some(z=>z.status==='go'),anyStop=zr.some(z=>z.status==='stop');
+  let cls,title,sub;
+  if(ctx.frost){cls='b-stop';title='❄️ Heute nicht bewässern – Frost';sub='Wasser gefriert; Leitungen schützen.'}
+  else if(anyGo){cls='b-go';title='💧 Heute bewässern';sub='Mindestens eine Zone braucht Wasser – Mengen siehe unten.'}
+  else if(anyStop){cls='b-stop';title='⛔ Nicht bewässern';sub='Mindestens eine Zone ist bereits zu nass.'}
+  else if(ctx.soaked){cls='b-no';title='✅ Heute nicht bewässern';sub='Der Regen reicht.'}
+  else{cls='b-wait';title='⏳ Noch nicht bewässern';sub='Im Boden ist noch genug Wasser.'}
+  let h=`<div class="big ${cls}"><h2>${title}</h2><p>${sub}</p></div>`;
+  ga.forEach(([c,t])=>h+=`<div class="alert ${c}">${t}</div>`);
+  const lab={go:['💧 Giessen','t-go'],no:['✓ Kein Wasser nötig','t-no'],wait:['✓ Kein Wasser nötig','t-no'],stop:['⛔ Nicht giessen','t-stop']};
+  const fmtMin=m=>{m=Math.round(m);return m>=90?Math.floor(m/60)+' Std.'+(m%60?' '+(m%60)+' Min.':''):m+' Minuten'};
+  const grp=new Map();
+  zr.forEach(z=>{if(z.status==='go'&&z.mins){const g=grp.get(z.sy)||[];g.push(z);grp.set(z.sy,g)}});
+  const todo=[];
+  grp.forEach((g,sy)=>{
+    const dom=g.reduce((a,b)=>b.area>a.area?b:a);
+    g.forEach(z=>{z.run=dom.mins;z.dom=z===dom});
+    todo.push('💧 <b>'+esc(sy.name)+':</b> '+fmtMin(dom.mins)+' laufen lassen (für '+g.map(z=>z.z.n).join(' und ')+')');
+  });
+  zr.forEach(z=>{if(z.status==='go'&&!z.mins)todo.push('🪣 <b>'+z.z.n+':</b> von Hand ca. '+Math.ceil(z.litres/10)+' Giesskannen zu 10 Litern')});
+  if(todo.length)h+='<div class="card"><h3 style="margin-top:0">Das ist heute zu tun</h3><ul class="tips" style="font-size:16px;line-height:1.6">'+todo.map(t=>'<li>'+t+'</li>').join('')+'</ul><p class="small" style="margin:8px 0 0">Jede Anlage läuft nur einmal, auch wenn sie mehrere Zonen versorgt. Darunter stehen die Einzelheiten zu jeder Zone.</p></div>';
+  let ruleShown=false;
+  zr.forEach(z=>{
+    const est=z.sy&&z.sy.type!=='manual'&&!z.sy.rate&&!(z.sy.bucket&&z.sy.covered);
+    let act,nums='',extra='';
+    if(z.status==='go'){
+      if(z.mins){
+        act=z.dom?`Heute ${fmtMin(z.run)} laufen lassen <span style="font-weight:400">(${esc(z.sy.name)})</span>`:`Wird mit «${esc(z.sy.name)}» mitbewässert: ${fmtMin(z.run)}`;
+        if(!z.dom){
+          const got=z.rate*z.run/60;
+          if(z.mm>got*1.3)extra+=`<div class="alert w">Diese Zone braucht mehr, als die Anlage in dieser Zeit bringt. Giesse hier von Hand etwa ${Math.round((z.mm-got)*z.area)} Liter nach.</div>`;
+          else if(z.mm<got*.7)extra+=`<div class="alert i">Allein bräuchte diese Stelle nur ${fmtMin(z.mins)}. Weil sie an derselben Anlage hängt, bekommt sie heute etwas mehr. Das ist in Ordnung, solange kein Wasser stehen bleibt.</div>`;
+        }
+        if(z.sy.type==='drip'&&z.run>=60)extra+='<div class="small">Tropfschläuche geben das Wasser langsam ab und laufen deshalb lange.</div>';
+        if(z.dom&&z.sy.type!=='drip'&&z.mm>=(S.garden.soil==='clay'?8:S.garden.soil==='loam'?15:99)){const n=S.garden.soil==='clay'?3:2;extra+=`<div class="alert i">Bildet sich eine Pfütze oder läuft Wasser weg? Dann nimmt der Boden es nicht so schnell auf. Teile die Zeit auf, zum Beispiel ${n} × ${Math.ceil(z.run/n)} Minuten mit je einer halben Stunde Pause.</div>`}
+        if(est)extra+='<div class="small">Die Laufzeit beruht auf einem Schätzwert für diesen Regner. Mit dem Eimertest in Schritt 3 wird sie genauer.</div>';
+      }else act=`Heute von Hand giessen: ca. ${Math.ceil(z.litres/10)} Giesskannen zu 10 Litern`;
+      nums=`<div>Wasserbedarf<br><b>${Math.round(z.litres)} Liter</b></div><div>Das sind<br><b>${z.mm.toFixed(0)} Liter pro m²</b></div><div>Wieder prüfen<br><b>in etwa ${z.daysNext} Tagen</b></div>`;
+      if(!ruleShown&&(z.k==='lawn'||z.k==='lawnS')){ruleShown=true;extra+='<div class="small">Zum Vergleich: Die gängige Faustregel für Rasen bei Hitze und Trockenheit lautet etwa 15 Liter pro m², ein- bis zweimal pro Woche. Die App rechnet genauer mit deinem Wetter und deinem Boden.</div>'}
+    }else if(z.status==='wait')act=`Heute nicht giessen – in etwa ${z.daysNext} Tagen wieder prüfen`;
+    else if(z.status==='no')act='Heute nicht giessen – in etwa 2 Tagen wieder prüfen';
+    else act='Jetzt nicht giessen';
+    const sysLine=z.sy?`Bewässerung: ${esc(z.sy.name)} (${IRR_NAMES[z.sy.type]})${z.assumed?' – laut deiner Angabe, nicht im Plan eingezeichnet':''}`:'Dieser Zone ist keine Anlage zugeordnet, deshalb von Hand giessen.';
+    h+=`<div class="zone" style="border-left-color:${z.z.c}"><h4><span>${z.z.n} · ${Math.round(z.area)} m²</span><span class="tag ${lab[z.status][1]}">${lab[z.status][0]}</span></h4>
+    <div class="todo">${act}</div>
+    <div>${z.reason}</div>${nums?`<div class="nums">${nums}</div>`:''}
+    ${extra}
+    ${z.sy&&!z.assumed&&z.cover<.8?`<div class="alert w">Nur ${Math.round(z.cover*100)} % dieser Zone sind im Plan durch die Anlage abgedeckt – den Rest von Hand giessen.</div>`:''}
+    ${z.warns.map(w=>`<div class="alert w">${w}</div>`).join('')}
+    ${z.newPlants?'<div class="alert i">Neu gepflanzte Pflanzen haben flache Wurzeln – häufiger prüfen.</div>':''}
+    <details class="det"><summary>Details</summary>${sysLine}<br>Dein Eintrag zum Boden: ${z.src}<br>Wasserreserve im Boden, bevor die Pflanzen leiden: ca. ${z.raw.toFixed(0)} Liter pro m²${z.mins?`<br>Die Anlage bringt etwa ${z.rate.toFixed(0)} Liter pro m² in einer Stunde.`:''}${z.plants?'<br>Hier wachsen: '+z.plants:''}</details></div>`;
+  });
+  let cmp='';
+  ctx.systems.forEach((s,i)=>{
+    const q=ctx.sysNeed[i];
+    if(s.type==='manual'||!q||!s.days||!s.mins)return;
+    const rate=rateOf(s),del=s.days*s.mins/60*rate,nd=q.den?q.num/q.den:0;
+    const sug=Math.max(1,Math.round(nd/rate*60/Math.max(1,s.days)));
+    const plan=`${s.days}× pro Woche ${s.mins} Minuten`;
+    let v,msg,c='w';
+    if(nd<2&&del>4){v='im Moment unnötig';msg=`Diese Woche braucht der Garten hier fast kein zusätzliches Wasser. Schalte die Anlage vorübergehend aus.`}
+    else if(del>nd*1.3+2){v='zu viel';msg=`Dein Plan (${plan}) gibt mehr Wasser als nötig. Stelle auf etwa ${sug} Minuten pro Lauf oder giesse an weniger Tagen.`}
+    else if(del<nd*.7-2){v='zu wenig';msg=`Dein Plan (${plan}) gibt weniger Wasser als nötig. Stelle auf etwa ${sug} Minuten pro Lauf.`}
+    else{v='passt';c='i';msg=`Dein Plan (${plan}) passt zum Bedarf dieser Woche.`}
+    cmp+=`<h4 style="margin:12px 0 4px">${esc(s.name)}: ${v}</h4><div class="alert ${c}">${msg}</div><details class="det"><summary>Zahlen dazu</summary>Dein Plan liefert etwa ${del.toFixed(0)} Liter pro m² in der Woche. Gebraucht werden nach Abzug des Regens etwa ${nd.toFixed(0)} Liter pro m².${s.ctrl==='smart'?' Mit Bodenfeuchtesensor sollte die Anlage selbst nach Bedarf regeln; prüfe dort die Einstellung.':''}</details>`;
+  });
+  if(cmp)h+=`<div class="card"><h3 style="margin-top:0">Dein Wochenplan im Vergleich</h3>${cmp}</div>`;
+  const used=[...new Set(zr.map(z=>z.k))];
+  h+='<div class="card"><h3 style="margin-top:0">Do\'s &amp; Dont\'s für deine Zonen</h3><div class="two"><div><b>✅ Do</b><ul class="tips">'+
+    ['Früh morgens bewässern, etwa zwischen 4 und 8 Uhr: Dann verdunstet wenig, und die Blätter trocknen rasch ab.',...used.flatMap(k=>TIPS[k]?TIPS[k].do:[])].map(t=>'<li>'+t+'</li>').join('')+
+    '</ul></div><div><b>⛔ Dont</b><ul class="tips">'+
+    ['Nicht nach Kalender, sondern nach Bodenfeuchte und Wetter giessen.',...used.flatMap(k=>TIPS[k]?TIPS[k].dont:[])].map(t=>'<li>'+t+'</li>').join('')+'</ul></div></div></div>';
+  h+=`<details class="det"><summary>So wurde gerechnet</summary>Die App schätzt, wie viel Wasser täglich verdunstet (heute ca. ${ctx.et0.toFixed(1)} Liter pro m², abhängig von Monat, Temperatur und Sonne), und berücksichtigt die Pflanzenart je Zone, die Bodenart (${SOIL[S.garden.soil].n}) und den Regen (80 % davon kommen im Boden an). Es sind Richtwerte – im Zweifel gilt die Fingerprobe.</details>`;
+  $('result').innerHTML=h;
+  $('result').scrollIntoView({behavior:'smooth'});
+}
+
+/* ===== Start, Import, Export ===== */
+const CODE={'.':'',R:'lawn',S:'lawnS',B:'bed',G:'veg',H:'shrub',T:'tree',D:'dry',X:'none'};
+const KIND_MAP=[[/baum|obst/i,'🌳'],[/gem[üu]se|tomat|salat/i,'🥕'],[/kr[äa]uter/i,'🌱'],[/k[üu]bel|topf/i,'🪴'],[/staude|blume|beet/i,'🌸'],[/strauch|hecke|busch|rose/i,'🌿']];
+function kindOf(s){s=String(s||'');if(['🌳','🌿','🌸','🥕','🌱','🪴'].includes(s))return s;for(const [re,e] of KIND_MAP)if(re.test(s))return e;return '🌿'}
+const clampN=(v,a,b)=>{v=parseFloat(v);return isFinite(v)&&v>=a&&v<=b?v:null};
+function resample(src,sc,sr,dc,dr){
+  const out=[];
+  for(let r=0;r<dr;r++)for(let c=0;c<dc;c++){
+    const sx=Math.min(sc-1,Math.floor((c+.5)*sc/dc)),sy=Math.min(sr-1,Math.floor((r+.5)*sr/dr));
+    out.push(src[sy*sc+sx]||'');
+  }
+  return out;
+}
+function setStatus(t,bad){const e=$('impStatus');e.textContent=t;e.className='status'+(bad?' err2':'')}
+function fileChosen(id,other){
+  $(other).value='';
+  const f=$(id).files[0],box=$('photoPrev');
+  if(f&&f.type.startsWith('image/')){const img=$('photoImg');if(img.dataset.u)URL.revokeObjectURL(img.dataset.u);const u=URL.createObjectURL(f);img.dataset.u=u;img.src=u;box.style.display='block'}
+  else box.style.display='none';
+  setStatus('');
+}
+function startManual(){S.imp=null;go(1)}
+function resetAsk(){$('resetBox').style.display='block'}
+function resetDo(){
+  if(DEMO){endDemo();return}
+  S={garden:{w:10,l:12,soil:'loam',sun:'1'},cells:[],icells:[],plants:[],systems:[],hasIrr:null,done:false,imp:null};normalizeState();
+  try{localStorage.removeItem('gartenwasser')}catch(e){}
+  $('resetBox').style.display='none';$('resume').style.display='none';renderNav();
+}
+function renderBanners(){
+  const G=['Breite','Länge'];
+  document.querySelectorAll('.banner').forEach(b=>{
+    const I=S.imp,st=b.dataset.step;
+    if(!I){b.style.display='none';return}
+    let h='';
+    if(st==='1'){
+      h='<b>Aus „'+esc(I.label)+'“ übernommen.</b> Gelb markierte Felder wurden aus dem Plan gelesen – bitte prüfen und bei Bedarf korrigieren.';
+      const m=I.missing.filter(x=>G.includes(x));
+      if(m.length)h+=' <b>Nicht gefunden (bitte ergänzen):</b> '+m.join(', ')+'.';
+      if(I.defaults&&I.defaults.length)h+=' <b>Standardwerte angenommen:</b> '+I.defaults.join(', ')+'.';
+      if(I.notes.length)h+='<ul>'+I.notes.map(n=>'<li>'+esc(String(n))+'</li>').join('')+'</ul>';
+    }else if(st==='2'){
+      h=I.zones?'<b>Aus deinem Plan wurde eine vereinfachte Zeichnung erstellt'+(I.plantsN?' (mit '+I.plantsN+' Pflanze(n))':'')+'.</b> Sie ist nur eine Näherung – übermale falsche Felder mit der passenden Zone oder radiere sie.'
+        :'<b>Aus dem Plan konnten keine Zonen gelesen werden.</b> Bitte zeichne deine Zonen und Pflanzen selbst ein.';
+    }else if(st==='3'){
+      h=I.sys?'<b>Bewässerungssysteme aus dem Plan übernommen</b> (gelb markiert). Bitte prüfe die Angaben und die Zeichnung und ergänze, was fehlt.':'<b>Zur Bewässerung wurde nichts Verlässliches gefunden.</b> Bitte gib sie selbst an oder lade hier einen Plan der Bewässerung hoch.';
+      const m=I.missing.filter(x=>!G.includes(x));
+      if(m.length&&I.sys)h+=' <b>Nicht gefunden:</b> '+m.join(', ')+'.';
+    }
+    b.innerHTML=h;b.style.display='block';
+  });
+}
+function markImp(){
+  document.querySelectorAll('.imp:not(.syscard)').forEach(e=>e.classList.remove('imp'));
+  if(!S.imp)return;
+  S.imp.hl.forEach(id=>{const e=$(id);if(e)e.classList.add('imp')});
+}
+function unmark(e){const t=e.target;if(t&&t.classList&&t.id!=='preOk'){t.classList.remove('imp');if(t.classList.contains('pre')){t.classList.remove('pre');updPre()}}}
+document.addEventListener('input',unmark);document.addEventListener('change',unmark);
+
+function applyImport(n,label){
+  const hl=[],missing=[],notes=(n.notes||[]).slice(0,6),defaults=[];
+  const g={...S.garden},ng=n.garden||{};
+  const w=clampN(ng.w,2,100),l=clampN(ng.l,2,100);
+  if(w){g.w=w;hl.push('gw')}else missing.push('Breite');
+  if(l){g.l=l;hl.push('gl')}else missing.push('Länge');
+  if(SOIL[ng.soil]){g.soil=ng.soil;hl.push('soil')}else{g.soil='loam';defaults.push('Bodenart: lehmig')}
+  if(['0.8','1','1.15'].includes(String(ng.sun))){g.sun=String(ng.sun);hl.push('sun')}else{g.sun='1';defaults.push('Sonneneinstrahlung: gemischt')}
+  {const L=ng.loc;if(L&&clampN(L.lat,-90,90)!==null&&clampN(L.lon,-180,180)!==null){g.loc={name:String(L.name||'Standort').slice(0,60),lat:+L.lat,lon:+L.lon};hl.push('lat','lon')}}
+  const gg=n.grid,gridOk=!!(gg&&gg.keys&&gg.cols>0&&gg.rows>0&&gg.keys.length===gg.cols*gg.rows&&gg.keys.some(k=>k));
+  if(gridOk&&(!w||!l)){
+    const asp=gg.rows/gg.cols;
+    if(!w&&!l){g.w=10;g.l=Math.max(2,Math.round(10*asp*2)/2)}
+    else if(w){g.l=Math.max(2,Math.min(100,Math.round(w*asp*2)/2))}
+    else{g.w=Math.max(2,Math.min(100,Math.round(l/asp*2)/2))}
+    if(!w)hl.push('gw');if(!l)hl.push('gl');
+    const mi=missing.indexOf('Breite');if(mi>=0&&!w)missing.splice(mi,1);
+    const mj=missing.indexOf('Länge');if(mj>=0&&!l)missing.splice(mj,1);
+    notes.push('Breite/Länge sind nur geschätzt (aus den Proportionen des Plans) – bitte mit den echten Massen ersetzen.');
+  }
+  if(['a4p','rect'].includes(ng.format))g.format=ng.format;else if(ng.format==='a4l')g.format='rect';
+  S.garden=g;geom();
+  S.cells=gridOk?embed(gg.keys,gg.cols,gg.rows):Array(GC*GR).fill('');
+  const pl=[];
+  (n.plants||[]).slice(0,60).forEach(p=>{
+    const name=String(p.name||'').trim().slice(0,40);
+    const x=clampN(p.x,0,1),y=clampN(p.y,0,1);
+    if(!name||x===null||y===null)return;
+    const pos=placePos(x,y);
+    if(pl.some(q=>q.r===pos.r&&q.c===pos.c))return;
+    pl.push({r:pos.r,c:pos.c,name,kind:kindOf(p.kind),isNew:!!p.isNew});
+  });
+  S.plants=pl;
+  let sys=Array.isArray(n.systems)?n.systems.map(normSys).filter(Boolean):[];
+  if(!sys.length&&n.irr){const lg=sysFromLegacy(n.irr);if(lg)sys=[lg]}
+  sys=sys.slice(0,9);sys.forEach((s,i)=>{if(!s.name||s.name==='System')s.name='System '+(i+1)});
+  S.systems=sys;
+  S.hasIrr=sys.length?true:((n.hasIrr===false||(n.irr&&n.irr.type==='none'))?false:null);
+  S.icells=Array(GC*GR).fill('');
+  const ig=n.irr_grid;
+  if(sys.length&&ig&&ig.keys&&ig.keys.length===ig.cols*ig.rows&&ig.keys.some(Boolean)){
+    S.icells=embed(ig.keys.map(v=>{v=parseInt(v);return v>=1&&v<=sys.length?v:''}),ig.cols,ig.rows);
+  }
+  S.irr=null;S.done=false;
+  S.imp={label,hl,missing:missing.concat(sysMissing(sys)),notes,zones:gridOk,plantsN:pl.length,sys:sys.length>0,defaults};
+  save();
+  go(1);
+}
+function fromProfile(p){
+  if(!p||p.app!=='gartenwasser')return null;
+  const keys=Array.isArray(p.cells)?p.cells.map(k=>ZONES[k]?k:''):[];
+  const pc=p.cols,pr=p.rows;
+  const n={garden:p.garden||{},grid:{cols:pc,rows:pr,keys},
+    plants:(p.plants||[]).map(q=>({name:q.name,kind:q.kind,isNew:q.isNew,x:pc>1?q.c/(pc-1):.5,y:pr>1?q.r/(pr-1):.5})),
+    irr:p.irr,systems:p.systems,hasIrr:p.hasIrr,notes:[]};
+  if(Array.isArray(p.icells))n.irr_grid={cols:pc,rows:pr,keys:p.icells};
+  return n;
+}
+function parseText(t){
+  const n={garden:{},grid:null,plants:[],irr:{},notes:['Nur Text ausgewertet (einfache Mustererkennung) – bitte alles sorgfältig prüfen.']};
+  const num=s=>parseFloat(String(s).replace(',','.'));
+  let m;
+  if(m=t.match(/(\d+[.,]?\d*)\s*(?:m)?\s*[x×]\s*(\d+[.,]?\d*)\s*m\b/i)){n.garden.w=num(m[1]);n.garden.l=num(m[2])}
+  else if(m=t.match(/(?:Garten|Grundst[üu]ck|Gartenfl[äa]che|Fl[äa]che)[^\d\n]{0,25}(\d+[.,]?\d*)\s*m\s*[²2]/i)){const a=num(m[1]);const s=Math.sqrt(a);n.garden.w=Math.round(s*2)/2;n.garden.l=Math.round(a/(Math.round(s*2)/2)*2)/2;n.notes.push('Nur die Gesamtfläche ('+a+' m²) war angegeben – Breite und Länge sind geschätzt.')}
+  if(m=t.match(/Boden(?:art)?[:\s]+(sandig|lehmig|tonig|sand|lehm|ton)/i)){const v=m[1].toLowerCase();n.garden.soil=v.startsWith('sand')?'sand':v.startsWith('ton')?'clay':'loam'}
+  const hasPop=/Versenkregner|Sprinklersystem|Turbinen/i.test(t),hasDrip=/Tropf|Micro-?Drip|Perlschlauch/i.test(t),hasMob=/Viereckregner|Kreisregner|Schwenkregner|Regnerschlauch|Sprinkler(?!system)/i.test(t);
+  n.irr.type=hasPop?'pop':hasDrip?'drip':/Viereckregner/i.test(t)?'square':/Impuls/i.test(t)?'impulse':/Kreisregner/i.test(t)?'circle':/Sektorenregner|Teilkreis/i.test(t)?'sector':hasMob?'mobile':null;
+  if(/smart\s*Sensor|Bodenfeuchtesensor/i.test(t))n.irr.ctrl='smart';
+  else if(/Regensensor/i.test(t))n.irr.ctrl='rain';
+  else if(/Bewässerungscomputer|Zeitschaltuhr|Bewässerungsuhr|Water Control|Ventilbox/i.test(t))n.irr.ctrl='timer';
+  if(m=t.match(/Ventilbox\s*V?\s*(\d)/i))n.irr.nzones=num(m[1]);
+  else if(m=t.match(/Leitung\s*\d+\s*\/\s*(\d+)/i))n.irr.nzones=num(m[1]);
+  if(m=t.match(/Eimerf[üu]llzeit[:\s]*(\d+[.,]?\d*)\s*(?:Sek|s\b)/i))n.irr.bucket=num(m[1]);
+  if(m=t.match(/(\d+[.,]?\d*)\s*mm\s*\/\s*h/i))n.irr.rate=num(m[1]);
+  return n;
+}
+function shrinkImage(file){
+  return new Promise((res,rej)=>{
+    const url=URL.createObjectURL(file),img=new Image();
+    img.onload=()=>{const k=Math.min(1,1600/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);c.toBlob(b=>b?res(b):rej(new Error('Bild nicht lesbar')),'image/jpeg',.85)};
+    img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error('Bild nicht lesbar'))};
+    img.src=url;
+  });
+}
+function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(new Error('Script nicht ladbar'));document.head.appendChild(s)})}
+async function readPdf(file){
+  const V='3.11.174',base='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/'+V+'/';
+  if(!window.pdfjsLib)await loadScript(base+'pdf.min.js');
+  pdfjsLib.GlobalWorkerOptions.workerSrc=base+'pdf.worker.min.js';
+  const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;
+  let text='';const images=[];
+  for(let i=1;i<=Math.min(pdf.numPages,6);i++){
+    const pg=await pdf.getPage(i);
+    const tc=await pg.getTextContent();text+=tc.items.map(x=>x.str).join(' ')+'\n';
+    if(i<=3){
+      const vp=pg.getViewport({scale:1.4}),c=document.createElement('canvas');c.width=vp.width;c.height=vp.height;
+      await pg.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;
+      const b=await new Promise(r=>c.toBlob(r,'image/jpeg',.85));if(b)images.push(b);
+    }
+  }
+  return {text,images};
+}
+function parseGridObj(g,mapper){
+  if(!g||!Array.isArray(g.rows_data))return null;
+  const rd=g.rows_data.map(x=>String(x)),cl=Math.max(...rd.map(x=>x.length),0);
+  if(!rd.length||!cl)return null;
+  return {cols:cl,rows:rd.length,keys:rd.flatMap(line=>line.padEnd(cl,'.').split('').map(mapper))};
+}
+async function getSample(){
+  return (window.claude&&claude.use)?await claude.use('sample'):null;
+}
+async function aiJson(prompt,blobs,text){
+  const sample=await getSample();if(!sample)return null;
+  let imgs=[];
+  if(blobs&&blobs.length){try{const lim=await sample.limits();if(lim&&lim.images)imgs=blobs}catch(e){}}
+  const full=prompt+(text&&text.trim()?'\n\nText aus dem Material:\n'+text.trim().slice(0,9000):'')+(imgs.length?'\n\n(Bilder des Plans sind angehängt.)':'');
+  const res=await sample(full,imgs.length?{images:imgs,modelTier:'default'}:{modelTier:'default'});
+  const m=String(res.text||'').match(/\{[\s\S]*\}/);if(!m)return null;
+  return {json:JSON.parse(m[0]),hadImages:imgs.length>0};
+}
+const SYS_SCHEMA='{"name":"kurzer Name, z. B. Versenkregner Rasen","type":"pop"(fest installierte Versenkregner)|"square"(Viereckregner)|"impulse"(Impulsregner)|"circle"(Kreisregner)|"sector"(Sektorenregner)|"mobile"(sonstiger Regner am Schlauch)|"drip"(Tropfbewässerung)|"manual"(von Hand),"ctrl":"none"|"timer"|"rain"(Zeitschaltuhr+Regensensor)|"smart"(Bodenfeuchtesensor),"nzones":Anzahl Ventile/Kreise oder null,"bucket":Eimerfüllzeit für 10 Liter in Sekunden oder null,"covered":bewässerte Fläche in m² oder null,"rate":Niederschlagsrate mm/h oder null,"days":Tage pro Woche oder null,"mins":Minuten pro Lauf oder null,"start":"HH:MM" oder null,"zones":["lawn"|"lawnS"|"bed"|"veg"|"shrub"|"tree"|"dry" – Zonenarten, die dieses System versorgt]}';
+const IRR_GRID_DOC='Raster der Bewässerung: {"cols":N,"rows":M,"rows_data":["genau M Zeilen mit je genau N Zeichen"]}, Zeichen: "0" = nicht bewässert, "1"…"9" = Nummer des Systems aus "systems" (1 = erstes System). Zeichne ein, welche Flächen von welchem System bewässert werden (z. B. Versenkregner-Reichweite, Tropfleitung entlang einer Hecke).';
+async function aiExtract(blobs,text){
+  const prompt=`Du liest einen Gartenplan bzw. eine Gartenbeschreibung und füllst damit ein Formular einer Bewässerungs-App. Antworte AUSSCHLIESSLICH mit einem JSON-Objekt, ohne Text davor oder danach. Erfinde nichts: Was im Material nicht erkennbar ist, ist null (oder leer).
+Schema:
+{"garden":{"w":Breite in m (horizontale Ausdehnung im Plan) oder null,"l":Länge in m (vertikale Ausdehnung) oder null,"soil":"sand"|"loam"|"clay"|null,"sun":"0.8"(überwiegend schattig)|"1"(gemischt)|"1.15"(überwiegend sonnig)|null},
+"grid":null oder {"cols":N,"rows":M,"rows_data":["genau M Zeilen mit je genau N Zeichen"]} – vereinfachte Zeichnung (Raster) der Gartenfläche von oben gesehen, N und M zwischen 10 und 20, Seitenverhältnis wie der Garten. Zeichne jede erkennbare Fläche ein (Rasen, Beete, Gebäude, Wege, Terrasse, Bäume), damit der Plan wiedererkennbar ist. Nur wenn wirklich kein Plan, Bild oder keine Flächenbeschreibung vorliegt, ist grid null. Zeichen: "." leer/unbekannt, R Rasen, S besonders empfindliche Rasenstelle (nur wenn ausdrücklich genannt, z. B. Neuansaat, Hang, Schatten), B Beet/Stauden, G Gemüse/Kräuter, H Sträucher/Hecke, T Baum/Obstbaum, D trockenheitsliebend (Lavendel, Rosmarin …), X Haus/Weg/Terrasse (nicht bewässern),
+"plants":[{"name":"…","kind":"Baum|Strauch|Staude|Gemüse|Kräuter|Kübel","x":0 bis 1 von links,"y":0 bis 1 von oben,"isNew":true|false}],
+"systems":[${SYS_SCHEMA}] – ALLE erkennbaren Bewässerungssysteme; es können mehrere nebeneinander bestehen (z. B. Versenkregner für Rasen und Bäume, Tropfbewässerung für eine Hecke). Leer, wenn keine Bewässerung erkennbar ist,
+"irr_grid":null oder ${IRR_GRID_DOC} Gleiche Rastergrösse wie "grid",
+"notes":["kurze deutsche Hinweise auf Unsicheres oder Angenommenes"]}
+Hinweise: GARDENA-myGarden-Pläne zeigen Regner, Ventilbox (V1 = 1 Ventil, V3 = 3 Ventile), «Eimerfüllzeit: N Sekunden» und «smart Sensor» (= Bodenfeuchtesensor, ctrl "smart").`;
+  const r=await aiJson(prompt,blobs,text);if(!r)return null;
+  const j=r.json;
+  j.grid=parseGridObj(j.grid,ch=>CODE[ch.toUpperCase()]||'');
+  j.irr_grid=parseGridObj(j.irr_grid,ch=>{const v=parseInt(ch);return v>=1?v:''});
+  if(!j.grid&&(r.hadImages||text.trim().length>40)){
+    try{
+      const r2=await aiJson('Erstelle aus dem Gartenplan bzw. der Beschreibung eine vereinfachte Zeichnung (Raster) der Gartenfläche von oben. Antworte NUR mit JSON: {"rows_data":["genau M Zeilen mit je genau N Zeichen"]}, N und M zwischen 10 und 20, Seitenverhältnis wie der Garten. Zeichen: "." leer/unbekannt, R Rasen, S empfindliche Rasenstelle, B Beet/Stauden, G Gemüse/Kräuter, H Sträucher/Hecke, T Baum, D trockenheitsliebend, X Haus/Weg/Terrasse.',blobs,text);
+      if(r2)j.grid=parseGridObj(r2.json,ch=>CODE[ch.toUpperCase()]||'');
+    }catch(e){}
+  }
+  return j;
+}
+async function aiIrr(blobs,text){
+  const g=geom();
+  const prompt=`Du liest einen Plan, ein Foto oder eine Beschreibung der Bewässerung eines Gartens (Garten ca. ${S.garden.w} × ${S.garden.l} m). Antworte AUSSCHLIESSLICH mit einem JSON-Objekt, ohne Text davor oder danach. Erfinde nichts: Unbekanntes ist null.
+Schema:
+{"systems":[${SYS_SCHEMA}] – ALLE erkennbaren Bewässerungssysteme (mehrere nebeneinander sind möglich, z. B. Versenkregner für Rasen und Bäume, Tropfbewässerung für eine Hecke),
+"grid":null oder ${IRR_GRID_DOC} N und M zwischen 10 und 20, Seitenverhältnis wie der Garten.}
+Hinweise: GARDENA-myGarden-Pläne zeigen Regner, Ventilbox (V1 = 1 Ventil, V3 = 3 Ventile), «Eimerfüllzeit: N Sekunden» und «smart Sensor» (ctrl "smart").`;
+  const r=await aiJson(prompt,blobs,text);if(!r)return null;
+  const j=r.json;j.grid=parseGridObj(j.grid,ch=>{const v=parseInt(ch);return v>=1?v:''});
+  return j;
+}
+async function doImport(){
+  const btn=$('impBtn');
+  try{
+    const f=$('planFile').files[0]||$('planPhoto').files[0],pasted=$('planText').value.trim();
+    if(!f&&!pasted){setStatus('Bitte eine Datei wählen oder Text einfügen.',true);return}
+    btn.disabled=true;setStatus('Plan wird gelesen …');
+    let label='Plan',mat={text:pasted,blobs:[]};
+    if(f){
+      const nm=f.name.toLowerCase();label=f.name;
+      if(nm.endsWith('.json')){
+        let p;try{p=JSON.parse(await f.text())}catch(e){throw new Error('Die Datei konnte nicht gelesen werden.')}
+        const n=fromProfile(p);if(!n)throw new Error('Diese Datei enthält keine gesicherten Angaben dieser App.');
+        planImgURL='';applyImport(n,f.name);return;
+      }
+      try{mat=await readMaterial(f,pasted)}
+      catch(e){setStatus('Die Datei konnte nicht gelesen werden. Bitte lade einen Screenshot (PNG/JPG) hoch oder füge den Text ein.',true);return}
+    }else if(pasted.startsWith('{')){
+      try{const n=fromProfile(JSON.parse(pasted));if(n){planImgURL='';applyImport(n,'eingefügte Angaben');return}}catch(e){}
+    }
+    planImgURL=mat.blobs.length?await blobToURL(mat.blobs[0]):'';
+    let n=null;
+    try{setStatus('Der Plan wird automatisch ausgewertet … (kann bis zu einer Minute dauern)');n=await aiExtract(mat.blobs,mat.text)}catch(e){n=null}
+    if(!n){
+      if(!mat.text.trim()){setStatus('Die automatische Auswertung ist nicht verfügbar oder wurde abgelehnt. Bitte gib die Angaben manuell ein oder füge den Text des Plans ein.',true);return}
+      n=parseText(mat.text);
+      n.notes.unshift('Die automatische Auswertung war nicht verfügbar – es wurde nur nach Stichworten gesucht.');
+    }
+    applyImport(n,label);
+  }catch(e){setStatus(e&&e.message?e.message:'Der Plan konnte nicht eingelesen werden.',true)}
+  finally{btn.disabled=false}
+}
+function profileJson(){
+  const g=geom();
+  const crop=a=>{const o=[];for(let r=0;r<g.grows;r++)for(let c=0;c<g.gcols;c++)o.push(a[(g.oy+r)*GC+g.ox+c]||'');return o};
+  return JSON.stringify({app:'gartenwasser',version:2,garden:S.garden,cols:g.gcols,rows:g.grows,cells:crop(S.cells),icells:crop(S.icells),
+    plants:S.plants.map(p=>({...p,r:p.r-g.oy,c:p.c-g.ox})),hasIrr:S.hasIrr,systems:S.systems.map(s=>{const o={...s};delete o._seen;return o})},null,1);
+}
+async function exportProfile(){
+  const txt=profileJson();
+  $('exportTxt').value=txt;$('exportBox').style.display='block';
+  $('exportMsg').textContent='Deine Angaben zur Einrichtung (ohne Wetterwerte).';
+  if(!window.claude){
+    try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'application/json'}));a.download='gartenbewaesserung-angaben.json';document.body.appendChild(a);a.click();a.remove();$('exportMsg').textContent='Die Datei «gartenbewaesserung-angaben.json» wurde heruntergeladen. Den Text findest du zur Sicherheit auch unten.';return}catch(e){}
+  }
+  try{
+    const d=window.claude&&claude.use?await claude.use('downloads'):null;
+    if(d){
+      try{await d.save({filename:'gartenbewaesserung-angaben.json',data:new Blob([txt],{type:'application/json'})})}
+      catch(e1){await d.save({filename:'gartenbewaesserung-angaben.json',data:txt})}
+      $('exportMsg').textContent='Gespeichert. Den Text findest du zur Sicherheit auch unten.';return;
+    }
+  }catch(e){}
+  $('exportMsg').textContent='Speichern als Datei ist hier nicht möglich. Kopiere den Text und bewahre ihn auf, z. B. in einer Notiz oder einer E-Mail an dich selbst. Später fügst du ihn auf der Startseite unter «Plan hochladen» ins Textfeld ein.';
+}
+async function copyExport(){
+  const t=$('exportTxt');
+  try{await navigator.clipboard.writeText(t.value);$('exportMsg').textContent='Kopiert.'}
+  catch(e){t.select();$('exportMsg').textContent='Bitte mit Strg/Cmd+C kopieren.'}
+}
+
+window.addEventListener('error',e=>{const f=document.getElementById('fatal');if(f){f.style.display='block';f.textContent='Fehler in der App: '+(e.message||e)+' – bitte melde diesen Text.'}});
+S.irr=S.irr||null;
+normalizeState();
+const HELP={
+ lawns:'Eine Stelle im Rasen, die schneller leidet als der Rest: zum Beispiel frisch angesäter Rasen, ein sonniger Hang oder eine Stelle unter einem Baum. Die App empfiehlt dort früher, aber kürzer zu giessen.',
+ serves:'Kreuze an, welche Bereiche dieses System bewässert. So weiss die App, für welche Zone sie die Laufzeit dieses Systems ausrechnen soll. Hast du die Bewässerung unten im Plan eingezeichnet, brauchst du hier nichts anzukreuzen.',
+ mm7:'Zähle zusammen, was in diesen sechs Tagen gefallen ist. Eine Schätzung genügt: Ein kurzer Schauer bringt etwa 1 bis 2 mm, ein verregneter Tag etwa 10 mm, ein starkes Gewitter 20 mm oder mehr. Kann die App den Wetterbericht holen, schlägt sie den Wert selbst vor.',
+ zone:'Eine Zone ist ein Bereich deines Gartens mit gleicher Bepflanzung, zum Beispiel der Rasen, ein Beet oder die Hecke. Jede Zone bekommt ihre eigene Giessempfehlung.',
+ soil:'Sandiger Boden rieselt durch die Finger. Lehmiger Boden lässt sich feucht zu einer Wurst formen. Toniger Boden ist schwer und klebrig. Im Zweifel «lehmig» lassen.',
+ coord:'Die zwei Zahlen beschreiben, wo dein Garten auf der Landkarte liegt. Am einfachsten tippst du oben den Ort ein und drückst «Ort suchen» – dann werden sie ausgefüllt. Die App braucht sie nur für den Wetterbericht.',
+ system:'Ein System ist eine Art, wie Wasser in den Garten kommt – zum Beispiel alle Versenkregner im Rasen zusammen oder der Tropfschlauch an der Hecke. Hast du beides, legst du zwei Systeme an.',
+ art:'Versenkregner: fahren beim Giessen aus dem Boden. Viereckregner: schwenkt hin und her und bewässert ein Rechteck. Impulsregner: dreht sich ruckweise mit Klackgeräusch. Kreisregner: dreht sich rundum. Sektorenregner: bewässert nur einen Kreisausschnitt. Tropfbewässerung: Schlauch mit kleinen Öffnungen direkt an den Pflanzen.',
+ ctrl:'Wer schaltet das Wasser ein und aus? Du selbst am Hahn, eine Zeitschaltuhr zu festen Zeiten, oder ein Gerät mit Fühler, das bei Regen oder feuchtem Boden von selbst pausiert.',
+ valves:'Jedes Ventil öffnet einen eigenen Strang von Regnern (einen «Kreis»). Hängt alles an einem einzigen Hahn, trage 1 ein.',
+ covered:'Die Fläche, die dieses System nass macht. Beispiel: ein Rasenstück von 8 × 10 m sind 80 m².',
+ rate:'So viele Millimeter Wasser bringt die Anlage in einer Stunde auf die Fläche – also wie stark sie «regnet». Das steht manchmal in der Anleitung des Regners. Wenn du es nicht weisst: leer lassen und den Eimertest machen.',
+ mm:'1 mm Regen bedeutet 1 Liter Wasser auf jeden Quadratmeter. Ablesen kannst du das an einem Regenmesser (ein kleiner Messbecher für den Garten aus dem Baumarkt) oder im Wetterbericht deines Ortes. Hat es nicht geregnet, lass das Feld leer.',
+ finger:'Stecke einen Finger etwa 5 cm tief in die Erde. Staubig und hell = sehr trocken. Krümelig = trocken. Kühl und frisch = leicht feucht. Lässt sich die Erde formen = gut feucht. Tritt Wasser aus = nass.',
+ sensor:'Nur wenn du ein Messgerät für Bodenfeuchte hast: Trage die Prozentzahl ein, die es anzeigt. Sonst das Feld leer lassen und links die Fingerprobe wählen. Tipps: Das Messgerät gehört dorthin, wo die Wurzeln sind, an eine typische Stelle der Zone – nicht in eine Senke oder direkt neben einen Regner. Nach Regen oder nach dem Giessen etwa einen Tag warten, bevor du abliest.',
+ mittel:'Der Regen, der laut Wetterbericht in 4 bis 7 Tagen fällt. Diese Vorhersage ist unsicherer als die für morgen.',
+ tmax:'Der Durchschnitt der höchsten Tagestemperaturen der nächsten drei Tage. Beispiel: 20, 22 und 24 Grad ergeben 22.',
+ tmin:'Die kälteste Temperatur der nächsten drei Nächte. Sie ist wichtig, weil bei Frost nicht bewässert werden darf.'
+};
+function qm(k){return '<span class="q" data-k="'+k+'" role="button" tabindex="0" aria-label="Erklärung anzeigen"></span>'}
+function toggleHelp(q){
+  const host=q.closest('label,p,li,h3,h2')||q;
+  const nx=host.nextElementSibling;
+  if(nx&&nx.classList.contains('qbox')&&nx.dataset.k===q.dataset.k){nx.remove();return}
+  if(nx&&nx.classList.contains('qbox'))nx.remove();
+  const b=document.createElement('div');b.className='qbox';b.dataset.k=q.dataset.k;if(q.dataset.k==='art')b.innerHTML=regnerGallery();else b.textContent=HELP[q.dataset.k]||'';
+  host.insertAdjacentElement('afterend',b);
+}
+document.addEventListener('click',e=>{const q=e.target.closest&&e.target.closest('.q');if(q){e.preventDefault();e.stopPropagation();toggleHelp(q)}});
+document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.classList&&e.target.classList.contains('q')){e.preventDefault();toggleHelp(e.target)}});
+document.querySelectorAll('.q').forEach(q=>{q.setAttribute('role','button');q.tabIndex=0;q.setAttribute('aria-label','Erklärung anzeigen')});
+const UNDO=[];
+function pushUndo(){UNDO.push(JSON.stringify({c:S.cells,i:S.icells,p:S.plants}));if(UNDO.length>30)UNDO.shift();updUndo()}
+function updUndo(){document.querySelectorAll('.undoBtn').forEach(b=>b.disabled=!UNDO.length)}
+function undo(){
+  const u=UNDO.pop();if(!u)return;const o=JSON.parse(u);geom();
+  if(o.c.length!==GC*GR){UNDO.length=0;updUndo();return}
+  S.cells=o.c;S.icells=o.i;S.plants=o.p;save();
+  if(step===2)fillStep2();else if(step===3&&S.hasIrr)drawGrid('grid3','i');
+  updUndo();
+}
+let toastT=null;
+function toast(t){const e=$('toast');e.textContent=t;e.style.display='block';clearTimeout(toastT);toastT=setTimeout(()=>{e.style.display='none'},4000)}
+function regnerGallery(){
+  const W='#6db3e8',WL='#d6ebfb',G='#8a6a45',K='#444';
+  const f=(svg,n,t)=>'<figure><svg viewBox="0 0 120 80" role="img" aria-label="'+n+'">'+svg+'</svg><figcaption><b>'+n+'</b>'+t+'</figcaption></figure>';
+  return '<div class="gal">'
+  +f('<rect x="0" y="56" width="120" height="24" fill="'+G+'"/><rect x="0" y="52" width="120" height="5" fill="#7cc35a"/><rect x="53" y="54" width="14" height="24" rx="2" fill="#777"/><rect x="57" y="34" width="6" height="22" fill="'+K+'"/><path d="M60 35 Q36 12 10 50M60 35 Q84 12 110 50M60 35 Q46 20 30 50M60 35 Q74 20 90 50" fill="none" stroke="'+W+'" stroke-width="2.5" stroke-dasharray="5 4"/>','Versenkregner','Steckt im Boden und fährt beim Giessen heraus.')
+  +f('<rect x="8" y="8" width="104" height="64" rx="3" fill="'+WL+'" stroke="'+W+'" stroke-width="2"/><rect x="22" y="37" width="76" height="6" rx="3" fill="'+K+'"/><path d="M60 32 V16M60 48 V64" stroke="'+W+'" stroke-width="3"/><path d="M54 18 L60 10 L66 18ZM54 62 L60 70 L66 62Z" fill="'+W+'"/>','Viereckregner','Schwenkt hin und her und giesst ein Rechteck.')
+  +f('<circle cx="60" cy="40" r="34" fill="none" stroke="'+W+'" stroke-width="2" stroke-dasharray="4 4"/><path d="M60 40 L88 20" stroke="'+W+'" stroke-width="5" stroke-linecap="round"/><circle cx="60" cy="40" r="6" fill="'+K+'"/><path d="M92 30 A34 34 0 0 1 93 48" fill="none" stroke="'+K+'" stroke-width="2"/><path d="M89 46 L93 54 L97 46Z" fill="'+K+'"/><path d="M44 30 l-7 -4M42 38 l-8 0M44 46 l-7 4" stroke="'+K+'" stroke-width="2"/>','Impulsregner','Ein kräftiger Strahl, dreht ruckweise mit «Klack»-Geräusch.')
+  +f('<circle cx="60" cy="40" r="34" fill="'+WL+'" stroke="'+W+'" stroke-width="2"/><path d="M60 40 L60 8M60 40 L88 56M60 40 L32 56" stroke="'+W+'" stroke-width="4" stroke-linecap="round"/><circle cx="60" cy="40" r="6" fill="'+K+'"/><path d="M78 14 A32 32 0 0 1 91 30" fill="none" stroke="'+K+'" stroke-width="2"/><path d="M87 29 L92 36 L95 27Z" fill="'+K+'"/>','Kreisregner','Mehrere Strahlen, dreht rundum im ganzen Kreis.')
+  +f('<circle cx="60" cy="46" r="34" fill="none" stroke="#bbb" stroke-width="1.5" stroke-dasharray="3 4"/><path d="M60 46 L36 22 A34 34 0 0 1 84 22 Z" fill="'+WL+'" stroke="'+W+'" stroke-width="2"/><path d="M60 46 L60 16" stroke="'+W+'" stroke-width="4" stroke-linecap="round"/><circle cx="60" cy="46" r="6" fill="'+K+'"/>','Sektorenregner','Giesst nur einen Ausschnitt des Kreises, zum Beispiel eine Ecke.')
+  +f('<path d="M4 26 H116" stroke="'+K+'" stroke-width="5" stroke-linecap="round"/><g fill="'+W+'"><path d="M24 31 q-5 8 0 11 q5 -3 0 -11Z"/><path d="M60 31 q-5 8 0 11 q5 -3 0 -11Z"/><path d="M96 31 q-5 8 0 11 q5 -3 0 -11Z"/></g><g fill="#4f9d69"><circle cx="24" cy="58" r="11"/><circle cx="60" cy="58" r="11"/><circle cx="96" cy="58" r="11"/></g><rect x="0" y="68" width="120" height="12" fill="'+G+'"/>','Tropfbewässerung','Schlauch, der bei jeder Pflanze langsam tropft.')
+  +'</div>';
+}
+$('galHost').innerHTML=regnerGallery();
+function resetS4(){
+  ['r24','r27','f24','f23','f47','tmax','tmin','wind','lastirr'].forEach(k=>{$(k).value='';$(k).classList.remove('pre')});
+  $('moist').innerHTML='';$('result').innerHTML='';$('fcCard').style.display='none';$('pastHint').textContent='';$('e4').textContent='';$('e5').textContent='';
+  $('preOk').checked=false;s4Init=false;fcCache=null;UNDO.length=0;planImgURL='';
+}
+function freshState(){return {garden:{w:10,l:12,soil:'loam',sun:'1'},cells:[],icells:[],plants:[],systems:[],hasIrr:null,done:false,imp:null}}
+function demoState(){
+  const y=new Date().getFullYear();
+  S={garden:{w:10,l:14,soil:'loam',sun:'1',format:'a4p',loc:{name:'Beispielort',lat:47.141,lon:9.521}},cells:[],icells:[],plants:[],systems:[],hasIrr:true,done:true,imp:null};
+  const g=geom();S.cells=Array(GC*GR).fill('');S.icells=Array(GC*GR).fill('');
+  for(let r=0;r<g.grows;r++)for(let c=0;c<g.gcols;c++){
+    const i=(g.oy+r)*GC+g.ox+c;let z='lawn';
+    if(r<4&&c>4&&c<g.gcols-4)z='none';
+    else if(c>=g.gcols-2)z='shrub';
+    else if(r>=g.grows-3&&c<8)z='bed';
+    else if(r>8&&r<13&&c<4)z='lawnS';
+    else if(r>15&&r<19&&c>9&&c<13)z='tree';
+    S.cells[i]=z;
+    if(z==='lawn'||z==='lawnS')S.icells[i]=1;if(z==='shrub')S.icells[i]=2;
+  }
+  const P=(r,c,name,kind,isNew)=>S.plants.push({r:g.oy+r,c:g.ox+c,name,kind,isNew:!!isNew});
+  P(17,11,'Apfelbaum','🌳');P(g.grows-2,2,'Rosen','🌸');P(g.grows-2,6,'Lavendel','🌸');P(6,g.gcols-1,'Thuja-Hecke','🌿');P(20,g.gcols-1,'Junge Hainbuche','🌿',true);
+  S.systems=[normSys({name:'Versenkregner Rasen',type:'pop',ctrl:'timer',nzones:1,bucket:20,covered:95,days:3,mins:20,start:'05:30'}),
+             normSys({name:'Tropfschlauch Hecke',type:'drip',ctrl:'none',rate:8,days:2,mins:30})];
+  const sc=DEMO_SCS[demoSc],ld=demoDate();ld.setDate(ld.getDate()-sc.last.daysAgo);
+  const mo={};Object.entries(sc.last.moist).forEach(([k,v])=>{mo[k]=[v,'']});
+  S.last={date:ld.getFullYear()+'-'+String(ld.getMonth()+1).padStart(2,'0')+'-'+String(ld.getDate()).padStart(2,'0'),r24:sc.last.r24,r27:sc.last.r27,lastirr:sc.last.lastirr,moist:mo};
+}
+const DEMO_SCS=[
+ {t:'☀️ Trockener Sommertag',m:6,d:15,desc:'Du öffnest die App nach einer Woche Ferien. Es hat kaum geregnet, und für die nächsten Tage ist wenig Regen angesagt.',
+  last:{daysAgo:7,r24:0,r27:3,lastirr:'2',moist:{lawn:'2',lawnS:'1',shrub:'3',bed:'2',tree:'3'}},
+  wx:{past24:0,past27:3,f24:0,f23:2,f47:8,tmax:29,tmin:16,wind:10},
+  today:{lastirr:'5',moist:{lawn:'2',lawnS:'1',shrub:'3',bed:'2',tree:'3'},note:'Im Beispiel stimmen die Werte vom letzten Mal noch. Sie werden nur bestätigt.'}},
+ {t:'⛈️ Nach einem Gewitter',m:6,d:18,desc:'Drei Tage später. In der Nacht ist ein kräftiges Gewitter niedergegangen.',
+  last:{daysAgo:3,r24:0,r27:3,lastirr:'0',moist:{lawn:'2',lawnS:'1',shrub:'3',bed:'2',tree:'3'}},
+  wx:{past24:18,past27:2,f24:0,f23:0,f47:5,tmax:24,tmin:14,wind:8},
+  today:{lastirr:'2',moist:{lawn:'4',lawnS:'4',shrub:'4',bed:'4',tree:'4'},note:'Im Beispiel wird die Bodenfeuchte auf «gut feucht» geändert, weil die Erde nach dem Gewitter nass ist.'}},
+ {t:'🔥 Hitzewelle',m:6,d:25,desc:'Eine Woche Hitze ohne Regen. Der Rasen wird stellenweise gelb.',
+  last:{daysAgo:2,r24:0,r27:18,lastirr:'5',moist:{lawn:'3',lawnS:'3',shrub:'4',bed:'3',tree:'4'}},
+  wx:{past24:0,past27:0,f24:0,f23:0,f47:0,tmax:34,tmin:19,wind:12},
+  today:{lastirr:'2',moist:{lawn:'1',lawnS:'1',shrub:'2',bed:'1',tree:'2'},note:'Im Beispiel wird die Bodenfeuchte auf «sehr trocken» und «trocken» geändert, weil die Fingerprobe das zeigt.'}},
+ {t:'❄️ Herbst mit Nachtfrost',m:9,d:28,desc:'Ende Oktober. Tagsüber ist es kühl, und für die Nacht ist Frost angesagt.',
+  last:{daysAgo:10,r24:2,r27:6,lastirr:'5',moist:{lawn:'3',lawnS:'3',shrub:'3',bed:'3',tree:'3'}},
+  wx:{past24:0,past27:4,f24:0,f23:3,f47:10,tmax:9,tmin:-1,wind:15},
+  today:{lastirr:'9',moist:{lawn:'3',lawnS:'2',shrub:'3',bed:'3',tree:'3'},note:'Im Beispiel wird nur die empfindliche Rasenstelle auf «trocken» geändert.'}}
+];
+let demoSc=0;
+function demoDate(){const sc=DEMO_SCS[demoSc];return new Date(new Date().getFullYear(),sc.m,sc.d)}
+function setScenario(i){demoSc=i;resetS4();demoState();normalizeState();go(4)}
+function renderDemoGuide(){
+  const e=$('demoGuide');if(!DEMO){e.style.display='none';return}
+  const sc=DEMO_SCS[demoSc];
+  e.innerHTML='<h2 style="color:#7a5c00">🧪 Demo: So arbeitest du im Alltag mit der App</h2>'
+   +'<p style="margin:4px 0 8px">Der Beispielgarten ist fertig eingerichtet. Ab jetzt läuft jedes Öffnen gleich ab:</p>'
+   +'<ol class="steps"><li><b>Öffnen:</b> Die App zeigt diese Seite mit deinen letzten Werten, blau markiert.</li><li><b>Prüfen:</b> Du änderst, was nicht mehr stimmt (Regen, Bodenfeuchte, letzte Bewässerung), oder bestätigst mit dem Häkchen.</li><li><b>Berechnen:</b> Ein Tipp auf «Wetter holen und Empfehlung berechnen» – die App zeigt, was heute zu tun ist.</li></ol>'
+   +'<p style="margin:10px 0 6px"><b>Wähle einen Beispieltag:</b></p><div class="tools">'
+   +DEMO_SCS.map((x,i)=>'<div class="tool '+(i===demoSc?'on':'')+'" onclick="setScenario('+i+')">'+x.t+'</div>').join('')+'</div>'
+   +'<p style="margin:6px 0"><b>'+sc.t+':</b> '+sc.desc+'</p>'
+   +'<div class="actions" style="justify-content:flex-start;margin-top:8px"><button class="btn" onclick="demoPlay()">▶ Beispiel für mich ausfüllen und Empfehlung zeigen</button></div>'
+   +'<p class="small" style="margin:8px 0 0">Lieber zuerst zuschauen? Das <a href="#" onclick="showVideo();return false">Erklärvideo</a> führt in knapp vier Minuten durch die App. Oder fülle die Felder unten selbst aus und probiere, wie sich die Empfehlung ändert. '+sc.today.note+'</p>';
+  e.style.display='block';
+}
+async function demoPlay(){
+  const sc=DEMO_SCS[demoSc];
+  Object.entries(sc.today.moist).forEach(([k,v])=>{const e=$('m_'+k);if(e){e.value=v;e.classList.remove('pre')}});
+  $('lastirr').value=sc.today.lastirr;$('r24').value=sc.wx.past24;$('r27').value=sc.wx.past27;
+  $('preOk').checked=true;
+  await stepWeather();
+}
+function setHdr(){$('btnDemo').classList.toggle('on',DEMO);$('btnDemo').textContent=DEMO?'🧪 Demo läuft':'🧪 Demo';$('demoBar').style.display=DEMO?'block':'none'}
+function toggleDemo(){if(DEMO){go(4);return}demoBack=step>=0?step:guideBack;DEMO=true;resetS4();demoState();normalizeState();setHdr();go(4)}
+function endDemo(){DEMO=false;resetS4();S=load()||freshState();S.irr=S.irr||null;normalizeState();setHdr();go(demoBack===4&&!S.done?0:demoBack)}
+function showGuide(){
+  if(step>=0)guideBack=step;step=-1;
+  document.querySelectorAll('section').forEach(x=>x.classList.remove('on'));$('sA').classList.add('on');renderNav();window.scrollTo(0,0);
+}
+function showVideo(){
+  if(step>=0)guideBack=step;step=-1;
+  document.querySelectorAll('section').forEach(x=>x.classList.remove('on'));$('sV').classList.add('on');renderNav();window.scrollTo(0,0);
+}
+$('vid').addEventListener('error',()=>{$('vidErr').style.display='block'});
+function closeGuide(){try{$('vid').pause()}catch(e){}go(guideBack===4&&!S.done?0:guideBack)}
+/* Init */
+window.addEventListener('DOMContentLoaded',()=>{
+  fillStep1();
+  go(S.done?4:0);
+});
+</script>
+</body>
+</html>
